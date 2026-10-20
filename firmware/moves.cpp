@@ -3,41 +3,41 @@
 namespace {
 const MoveDef MOVE_TABLE[] = {
   { "-", TYPE_NONE, MOVE_FX_IMPACT },
-  { "전광석화", TYPE_NORMAL, MOVE_FX_SPEED },  // 1 quick-attack
-  { "몸통박치기", TYPE_NORMAL, MOVE_FX_NORMAL },  // 2 tackle
-  { "박치기", TYPE_NORMAL, MOVE_FX_NORMAL },  // 3 headbutt
-  { "누르기", TYPE_NORMAL, MOVE_FX_NORMAL },  // 4 body-slam
-  { "이판사판태클", TYPE_NORMAL, MOVE_FX_NORMAL },  // 5 double-edge
-  { "베어가르기", TYPE_NORMAL, MOVE_FX_SLASH },  // 6 slash
-  { "스피드스타", TYPE_NORMAL, MOVE_FX_NORMAL },  // 7 swift
-  { "트라이어택", TYPE_NORMAL, MOVE_FX_NORMAL },  // 8 tri-attack
-  { "파괴광선", TYPE_NORMAL, MOVE_FX_NORMAL },  // 9 hyper-beam
-  { "짓밟기", TYPE_NORMAL, MOVE_FX_NORMAL },  // 10 stomp
-  { "불꽃세례", TYPE_FIRE, MOVE_FX_FIRE },  // 11 ember
-  { "불꽃엄니", TYPE_FIRE, MOVE_FX_FIRE },  // 12 fire-fang
-  { "화염바퀴", TYPE_FIRE, MOVE_FX_FIRE },  // 13 flame-wheel
-  { "불꽃펀치", TYPE_FIRE, MOVE_FX_FIRE },  // 14 fire-punch
-  { "화염방사", TYPE_FIRE, MOVE_FX_FIRE },  // 15 flamethrower
-  { "불대문자", TYPE_FIRE, MOVE_FX_FIRE },  // 16 fire-blast
-  { "물대포", TYPE_WATER, MOVE_FX_WATER },  // 17 water-gun
-  { "거품광선", TYPE_WATER, MOVE_FX_WATER },  // 18 bubble-beam
-  { "아쿠아제트", TYPE_WATER, MOVE_FX_SPEED },  // 19 aqua-jet
-  { "물의파동", TYPE_WATER, MOVE_FX_WATER },  // 20 water-pulse
-  { "폭포오르기", TYPE_WATER, MOVE_FX_WATER },  // 21 waterfall
-  { "파도타기", TYPE_WATER, MOVE_FX_WATER },  // 22 surf
-  { "하이드로펌프", TYPE_WATER, MOVE_FX_WATER },  // 23 hydro-pump
-  { "전기쇼크", TYPE_ELECTRIC, MOVE_FX_ELECTRIC },  // 24 thunder-shock
-  { "스파크", TYPE_ELECTRIC, MOVE_FX_ELECTRIC },  // 25 spark
-  { "일렉트릭볼", TYPE_ELECTRIC, MOVE_FX_ELECTRIC },  // 26 electro-ball
-  { "번개펀치", TYPE_ELECTRIC, MOVE_FX_ELECTRIC },  // 27 thunder-punch
-  { "10만볼트", TYPE_ELECTRIC, MOVE_FX_ELECTRIC },  // 28 thunderbolt
-  { "번개", TYPE_ELECTRIC, MOVE_FX_ELECTRIC },  // 29 thunder
-  { "덩굴채찍", TYPE_GRASS, MOVE_FX_GRASS },  // 30 vine-whip
-  { "잎날가르기", TYPE_GRASS, MOVE_FX_GRASS },  // 31 razor-leaf
-  { "씨기관총", TYPE_GRASS, MOVE_FX_GRASS },  // 32 bullet-seed
-  { "씨폭탄", TYPE_GRASS, MOVE_FX_GRASS },  // 33 seed-bomb
-  { "에너지볼", TYPE_GRASS, MOVE_FX_GRASS },  // 34 energy-ball
-  { "솔라빔", TYPE_GRASS, MOVE_FX_GRASS },  // 35 solar-beam
+  { "電光石火", TYPE_NORMAL, MOVE_FX_SPEED },  // 1 quick-attack
+  { "撞擊", TYPE_NORMAL, MOVE_FX_NORMAL },  // 2 tackle
+  { "頭錘", TYPE_NORMAL, MOVE_FX_NORMAL },  // 3 headbutt
+  { "泰山壓頂", TYPE_NORMAL, MOVE_FX_NORMAL },  // 4 body-slam
+  { "捨身衝撞", TYPE_NORMAL, MOVE_FX_NORMAL },  // 5 double-edge
+  { "劈開", TYPE_NORMAL, MOVE_FX_SLASH },  // 6 slash
+  { "高速星星", TYPE_NORMAL, MOVE_FX_NORMAL },  // 7 swift
+  { "三重攻擊", TYPE_NORMAL, MOVE_FX_NORMAL },  // 8 tri-attack
+  { "破壞光線", TYPE_NORMAL, MOVE_FX_NORMAL },  // 9 hyper-beam
+  { "踩踏", TYPE_NORMAL, MOVE_FX_NORMAL },  // 10 stomp
+  { "火花", TYPE_FIRE, MOVE_FX_FIRE },  // 11 ember
+  { "火焰牙", TYPE_FIRE, MOVE_FX_FIRE },  // 12 fire-fang
+  { "火焰輪", TYPE_FIRE, MOVE_FX_FIRE },  // 13 flame-wheel
+  { "火焰拳", TYPE_FIRE, MOVE_FX_FIRE },  // 14 fire-punch
+  { "噴射火焰", TYPE_FIRE, MOVE_FX_FIRE },  // 15 flamethrower
+  { "大字爆炎", TYPE_FIRE, MOVE_FX_FIRE },  // 16 fire-blast
+  { "水槍", TYPE_WATER, MOVE_FX_WATER },  // 17 water-gun
+  { "泡沫光線", TYPE_WATER, MOVE_FX_WATER },  // 18 bubble-beam
+  { "水流噴射", TYPE_WATER, MOVE_FX_SPEED },  // 19 aqua-jet
+  { "水之波動", TYPE_WATER, MOVE_FX_WATER },  // 20 water-pulse
+  { "攀瀑", TYPE_WATER, MOVE_FX_WATER },  // 21 waterfall
+  { "衝浪", TYPE_WATER, MOVE_FX_WATER },  // 22 surf
+  { "水炮", TYPE_WATER, MOVE_FX_WATER },  // 23 hydro-pump
+  { "電擊", TYPE_ELECTRIC, MOVE_FX_ELECTRIC },  // 24 thunder-shock
+  { "電光", TYPE_ELECTRIC, MOVE_FX_ELECTRIC },  // 25 spark
+  { "電球", TYPE_ELECTRIC, MOVE_FX_ELECTRIC },  // 26 electro-ball
+  { "雷電拳", TYPE_ELECTRIC, MOVE_FX_ELECTRIC },  // 27 thunder-punch
+  { "十萬伏特", TYPE_ELECTRIC, MOVE_FX_ELECTRIC },  // 28 thunderbolt
+  { "打雷", TYPE_ELECTRIC, MOVE_FX_ELECTRIC },  // 29 thunder
+  { "藤鞭", TYPE_GRASS, MOVE_FX_GRASS },  // 30 vine-whip
+  { "飛葉快刀", TYPE_GRASS, MOVE_FX_GRASS },  // 31 razor-leaf
+  { "種子機關槍", TYPE_GRASS, MOVE_FX_GRASS },  // 32 bullet-seed
+  { "種子炸彈", TYPE_GRASS, MOVE_FX_GRASS },  // 33 seed-bomb
+  { "能量球", TYPE_GRASS, MOVE_FX_GRASS },  // 34 energy-ball
+  { "日光束", TYPE_GRASS, MOVE_FX_GRASS },  // 35 solar-beam
   { "얼음뭉치", TYPE_ICE, MOVE_FX_ICE },  // 36 ice-shard
   { "얼어붙은바람", TYPE_ICE, MOVE_FX_ICE },  // 37 icy-wind
   { "냉동펀치", TYPE_ICE, MOVE_FX_ICE },  // 38 ice-punch
