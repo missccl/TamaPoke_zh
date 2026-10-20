@@ -6,13 +6,13 @@ public partial class SaveDataDialog : Window
 {
     public SaveDataChoice Choice { get; private set; } = SaveDataChoice.Cancel;
 
-    public SaveDataDialog(string firmwareVersion, bool confirmedKorean = true)
+    public SaveDataDialog(string firmwareVersion, bool confirmedCompatibleFirmware = true)
     {
         InitializeComponent();
         VersionText.Text = $"감지된 펌웨어: {firmwareVersion}";
-        HeadingText.Text = confirmedKorean
-            ? "기존 타마포케 한글판 저장 데이터를 확인했습니다"
-            : "저장 데이터 처리 방법을 선택하세요";
+        HeadingText.Text = confirmedCompatibleFirmware
+            ? "已確認現有 TamaPoke 儲存資料"
+            : "請選擇如何處理儲存資料";
     }
 
     private void KeepButton_Click(object sender, RoutedEventArgs e)

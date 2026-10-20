@@ -1,105 +1,57 @@
-타마포케 한글판 공개 플래셔 사용 안내
+TamaPoke 香港繁體中文版公開安裝程式指南
 ======================================
 
-중요 경고
----------
-이 플래셔, 공개 저장소 및 릴리스에는 포켓몬 스프라이트와 실제 추가 음원이
-들어 있지 않습니다. 함께 제공되는 sample_Additional_assets.zip에는 ccs21이
-직접 제작한 기본 이미지와 음원 생략용 0바이트 표시 파일만 들어 있습니다.
-맞춤 자산에는 본인이 직접 제작했거나 소프트웨어 삽입·편집·사용 권한을 보유한
-파일만 넣으세요.
+重要事項
+--------
+公開安裝程式、儲存庫及瀏覽器套件不包含寶可夢精靈圖、實際額外音效，
+或已整合使用者資產的完整韌體。隨附的 sample_Additional_assets.zip
+只有 ccs21 自製的基本示範圖片和 0 位元組音效標記。
 
-플래셔가 만든 전체 펌웨어(*-full.bin), Additional_assets.zip, 스프라이트
-캐시를 제3자에게 재배포하지 마세요. 완성 펌웨어에는 서로 다른 권리의 코드와
-자산이 결합되며, 재배포자는 라이선스 위반이나 권리자의 문제 제기에 대한
-책임을 직접 부담할 수 있습니다.
+請勿重新散佈安裝程式製作的完整韌體（*-full.bin）、自備資產 ZIP 或
+精靈圖快取。請只加入你自行製作或有權使用的素材。
 
-준비 순서
----------
-1. TamaPoke-Flasher-v2.2.6.exe를 원하는 폴더에 둡니다.
-2. 함께 들어 있는 sample_Additional_assets.zip을 같은 폴더에 그대로 둡니다.
-3. ESP32-S3 기기의 화면이 켜진 상태로 USB-C 데이터 케이블을 연결합니다.
-4. 플래셔를 실행하고 새로고침으로 추가 자산 감지를 확인합니다.
-5. "자동 확인 후 설치"를 누릅니다.
+Windows 安裝步驟
+----------------
+1. 將 TamaPoke-Flasher-v*.exe 和 sample_Additional_assets.zip 放在同一資料夾。
+2. 喚醒裝置，使用 USB-C 資料線連接 Windows 10/11 電腦。
+3. 執行安裝程式，按「重新整理」確認資產狀態和 COM 埠。
+4. 按「自動檢查並安裝」，並依提示選擇如何處理相容的儲存資料。
 
-기본 설치에는 별도 자산 준비가 필요 없습니다. 맞춤 이미지나 음원을 쓰려면
-sample_Additional_assets.zip을 복사해 Additional_assets.zip으로 이름을 바꾼
-뒤 복사본만 수정하세요. 두 ZIP이 모두 있으면 Additional_assets.zip을 우선하며,
-누락되거나 손상된 파일은 확인 후 샘플에서 보충할 수 있습니다. 중복 파일은
-사용자가 직접 정리해야 합니다.
+此安裝程式支援 Waveshare AMOLED 1.75（16 MB）及 1.75C（32 MB），會按容量
+識別裝置。初次安裝需要互聯網下載工具和精靈圖。詳情請參閱：
+docs\INSTALLATION_GUIDE.md
 
-일반 사용자는 Arduino나 Python을 설치할 필요가 없습니다. 처음 설치할 때
-필요한 도구와 스프라이트를 내려받으므로 인터넷 연결이 필요합니다.
-
-맞춤 Additional_assets.zip 구성
---------------------------------
-Visual\L01.png  로딩 화면 (권장 350x350, 검은 배경 합성)
-Visual\B01.png  닫힌 포획 볼 (권장 160x160, 검은 배경 합성)
-Visual\B02.png  열린 포획 볼 (권장 160x160, 검은 배경 합성)
-Visual\S01.png  잠만보 머리·팔, 맨 뒤 레이어 (권장 350x350)
-Visual\S02.png  잠만보 몸통, 가운데 레이어 (권장 350x350)
-Visual\S03.png  잠만보 발, 맨 앞 레이어 (권장 350x350)
-Visual\S04.png  잠에서 깬 잠만보 전체 (권장 350x350)
-Visual\D01.png ~ D04.png  디그다 등장 4프레임 (각 22x17 필수, D01은 빈 땅굴 겸용)
-
-Audio\P.mp3 또는 P.wav        특별 파트너 등장음 (최대 4초 사용)
-Audio\Care.mp3 또는 Care.wav  케어 알림음 (최대 10초 사용)
-Audio\C.mp3 또는 C.wav        포획 성공음 (최대 10초 사용)
-Audio\L.mp3 또는 L.wav        저체력 알림음 (최대 6초 사용)
-Audio\E.mp3 또는 E.wav        진화 (6.2초 이상, 1.0초부터 5.2초, 끝 2초 페이드)
-Audio\B.mp3 또는 B.wav        작별 (10초 이상, 처음 10초, 끝 2초 페이드)
-Audio\BAT.mp3 또는 BAT.wav    배틀 (60초 이상, 처음 60초, 끝 5초 페이드)
-Audio\MIN.mp3 또는 MIN.wav    미니게임 (60초 이상, 처음 60초, 끝 5초 페이드)
-Audio\MAR.mp3 또는 MAR.wav    통신 짝짓기 (15.5초 이상, 끝 5초 페이드)
-
-ZIP 안에 상위 폴더가 하나 더 있어도 인식하지만 Visual과 Audio 폴더명 및
-파일명은 위 표기대로 유지하세요. 대소문자는 구분하지 않습니다. 같은 오디오의
-MP3와 WAV를 동시에 넣으면 중복 오류가 납니다.
-
-잠만보 이미지 주의
-------------------
-S01~S04는 완전히 같은 350x350 캔버스, 같은 원점과 배율로 만드세요. 완성된
-그림 한 장을 네 장으로 복제한 뒤 각 레이어에서 필요 없는 부분만 투명하게
-지우는 방식이 가장 안전합니다. 부품을 이동시키면 합성할 때 몸이 어긋납니다.
-
-S01(머리·팔)을 먼저 그리고 S02(몸통), S03(발) 순서로 겹칩니다. 일반 타격
-때는 S02만 흔들립니다. 100점에 도달하면 세 레이어 대신 S04로 바뀝니다.
-S01+S02+S03을 같은 좌표에 겹쳤을 때 완전한 한 장이 보여야 합니다.
-
-설치 및 캐시
+使用自備資產
 ------------
-처음 설치할 때 플래셔는 SpriteCollab 원본 저장소에서 필요한 1세대
-스프라이트와 제작자 크레딧을 직접 내려받고 최적화합니다. 또한 공식 배포된
-플래싱·파일시스템 도구를 내려받아 SHA-256으로 검증합니다.
+複製 sample_Additional_assets.zip，將複本命名為 Additional_assets.zip，再只
+修改複本。安裝程式優先使用自備 ZIP；缺少或損壞的項目會先詢問是否以樣本
+補上。MP3 和 WAV 不可同時提供同一音效。
 
-다운로드와 생성 파일은 실행 파일 옆에만 보관됩니다.
+視覺資產（PNG）：
+Visual\L01.png                 載入畫面（建議 350x350）
+Visual\B01.png / B02.png       捕捉用關閉／開啟精靈球（建議 160x160）
+Visual\S01.png / S02.png       卡比獸頭部手臂／身體圖層（建議 350x350）
+Visual\S03.png / S04.png       卡比獸腳部圖層／成功畫面（建議 350x350）
+Visual\D01.png 至 D04.png      地鼠出現動畫（每張必須 22x17；D01 是空洞）
 
-TamaPoke-Flasher-Data\
-  Cache\      스프라이트 원본/가공본, 크레딧, 추가 자산, 완성 펌웨어
-  Payload\    다운로드한 도구와 자산 없는 기본 프로그램
-  Logs\       설치 로그
-  Backups\    저장 데이터 백업
+音效檔案名稱和長度等其他格式要求，請參閱 docs\ADDITIONAL_ASSETS_GUIDE.md。
+S01 至 S04 應使用相同 350x350 畫布和圖像位置；音效請只提供 MP3 或 WAV 其中一種。
 
-ZIP 안의 이미지나 음원이 하나라도 바뀌면 내용 해시가 달라져 새 자산과
-펌웨어를 만듭니다. 동일한 ZIP·스프라이트·기종 조합은 캐시된 펌웨어를
-재사용합니다. 사용자 파일은 외부 서버로 업로드하지 않습니다. 모든 캐시를
-지우려면 플래셔를 종료하고 TamaPoke-Flasher-Data 폴더를 삭제하세요.
+安裝程式只會在你的電腦處理自備素材，不會將檔案上載至外部伺服器。首次執行
+下載或產生的檔案會放在執行檔旁的 TamaPoke-Flasher-Data 資料夾。
 
-더 자세한 이미지 배치·음원 가공·오류 해결 안내
-----------------------------------------------
-https://github.com/ccs21/TamaPoke_Piggy_Kor/blob/main/docs/ADDITIONAL_ASSETS_GUIDE.md
+瀏覽器安裝方式
+--------------
+瀏覽器安裝只支援 Waveshare AMOLED 1.75，不支援 1.75C。需要 HTTPS 網頁、
+支援 Web Serial 的桌面版 Chrome 或 Edge，以及 USB-C 資料線；瀏覽器基本韌體
+不含精靈圖、LittleFS 資產或使用者素材。完整步驟和限制請參閱
+docs\INSTALLATION_GUIDE.md。
 
-저작권 및 프로젝트 고지
------------------------
-본 프로젝트는 비공식·비상업 팬 프로젝트이며 The Pokémon Company,
-Nintendo, Creatures, GAME FREAK 및 Bandai와 제휴하거나 승인받지 않았습니다.
-관련 이름, 캐릭터, 디자인, 상표 및 기타 권리는 각 원권리자에게 있습니다.
+非官方粉絲作品
+--------------
+本專案與 The Pokémon Company、Nintendo、Creatures、GAME FREAK、Bandai 或
+Waveshare 無關，亦未獲其認可。SpriteCollab 精靈圖依其 CC BY-NC 4.0 條款
+及製作者署名要求使用；下載不會授予額外權利。
 
-플래셔가 스프라이트를 내려받는다는 사실은 별도의 사용 권리를 부여하지
-않습니다. SpriteCollab의 CC BY-NC 4.0 조건과 제작자 표기를 확인하고
-준수하세요. 상세 크레딧과 라이선스 파일은 스프라이트 캐시에 보존됩니다.
-
-게시자: ccs21
-프로젝트: https://github.com/ccs21/TamaPoke_Piggy_Kor
-원본 프로젝트: https://github.com/socquique/TamaPoke
-스프라이트 원본: https://github.com/PMDCollab/SpriteCollab
+專案： https://github.com/missccl/TamaPoke_zh
+原始碼： https://github.com/socquique/TamaPoke

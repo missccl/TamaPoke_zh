@@ -93,7 +93,7 @@
           <Border Background="#223A4F" CornerRadius="9" Padding="11,6" HorizontalAlignment="Right">
             <TextBlock Text="공개용" Foreground="#C5E9FF" FontWeight="SemiBold" />
           </Border>
-          <TextBlock Text="펌웨어 1.48.7-ko" Margin="0,7,0,0" HorizontalAlignment="Right"
+          <TextBlock Text="韌體 1.48.7-hk" Margin="0,7,0,0" HorizontalAlignment="Right"
                      Foreground="{StaticResource MutedBrush}" FontSize="11" />
           <TextBlock Text="플래셔 2.2.6" Margin="0,2,0,0" HorizontalAlignment="Right"
                      Foreground="{StaticResource MutedBrush}" FontSize="11" />

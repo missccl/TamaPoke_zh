@@ -43,9 +43,13 @@ public partial class App : Application
                 throw new InvalidOperationException("보드 매핑 검사에 실패했습니다.");
             var saveInfo = FirmwareProbe.ParseSaveInfo(
                 "fw=1.46.0-ko-175 save=loaded createdBoot=0 spec=25 level=3 egg=0 starter=0 age=240\nDONE\n");
-            if (saveInfo is not { IsKorean: true, HasExistingSave: true } ||
+            if (saveInfo is not { IsCompatibleFirmware: true, HasExistingSave: true } ||
                 saveInfo.Version != "1.46.0-ko-175")
                 throw new InvalidOperationException("한글판 저장 데이터 감지 검사에 실패했습니다.");
+            var hkSaveInfo = FirmwareProbe.ParseSaveInfo(
+                "fw=1.48.7-hk-175 save=loaded createdBoot=0 spec=25 level=3 egg=0 starter=0 age=240\nDONE\n");
+            if (hkSaveInfo is not { IsCompatibleFirmware: true, HasExistingSave: true })
+                throw new InvalidOperationException("香港繁體中文版儲存資料偵測測試失敗。");
             if (EspToolService.NvsOffset != 0x9000 || EspToolService.NvsSize != 0x5000)
                 throw new InvalidOperationException("저장 데이터 파티션 검사에 실패했습니다.");
 

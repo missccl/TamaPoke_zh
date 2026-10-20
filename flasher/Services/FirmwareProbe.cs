@@ -26,7 +26,7 @@ public sealed partial class FirmwareProbe
             port.Open();
             // USB CDC can still be settling immediately after wake/reconnect.
             // Give it time, then retry instead of treating one missed command
-            // as proof that no Korean save exists.
+            // as proof that no compatible TamaPoke save exists.
             await Task.Delay(500, cancellationToken);
             port.DiscardInBuffer();
             port.DiscardOutBuffer();
@@ -66,15 +66,15 @@ public sealed partial class FirmwareProbe
             var match = SaveInfoRegex().Match(raw);
             if (!match.Success)
             {
-                log("실행 중인 한글판 응답을 확인하지 못했습니다.");
+                log("無法確認執行中的 TamaPoke 韌體回應。");
                 return null;
             }
 
             var version = match.Groups["version"].Value;
             var hasSave = match.Groups["save"].Value.Equals("loaded", StringComparison.OrdinalIgnoreCase);
-            var isKorean = version.Contains("-ko", StringComparison.OrdinalIgnoreCase);
+            var isCompatible = IsCompatibleVersion(version);
             log($"실행 펌웨어 확인: {version} / 저장 데이터 {(hasSave ? "있음" : "새로 생성됨")}");
-            return new FirmwareSaveInfo(version, isKorean, hasSave, raw);
+            return new FirmwareSaveInfo(version, isCompatible, hasSave, raw);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -95,10 +95,14 @@ public sealed partial class FirmwareProbe
         var version = match.Groups["version"].Value;
         return new FirmwareSaveInfo(
             version,
-            version.Contains("-ko", StringComparison.OrdinalIgnoreCase),
+            IsCompatibleVersion(version),
             match.Groups["save"].Value.Equals("loaded", StringComparison.OrdinalIgnoreCase),
             response);
     }
+
+    private static bool IsCompatibleVersion(string version) =>
+        version.Contains("-ko", StringComparison.OrdinalIgnoreCase) ||
+        version.Contains("-hk", StringComparison.OrdinalIgnoreCase);
 
     [GeneratedRegex(@"fw=(?<version>\S+)\s+save=(?<save>loaded|created)", RegexOptions.IgnoreCase)]
     private static partial Regex SaveInfoRegex();
