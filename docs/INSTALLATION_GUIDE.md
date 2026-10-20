@@ -54,8 +54,8 @@ Web Serial 需要安全連線和瀏覽器支援。Safari、Firefox 和手機瀏�
 1. 從[本專案的 GitHub Releases](https://github.com/missccl/TamaPoke_zh/releases)下載最新的公開安裝程式 ZIP，使用「全部解壓縮」將檔案解壓至資料夾；不要直接從 ZIP 執行程式。
 2. 確認 `TamaPoke-Flasher-v*.exe` 和 `sample_Additional_assets.zip` 位於同一資料夾。
 3. 喚醒裝置，並以 USB-C 資料線連接電腦。
-4. 執行安裝程式，按「重新整理」確認資產狀態及 COM 埠。
-5. 按「自動檢查並安裝」，並依畫面提示選擇是否保留相容的現有儲存資料。
+4. 執行安裝程式，按「새로고침」（重新整理）確認資產狀態及 COM 埠。
+5. 按「자동 확인 후 설치」（自動檢查並安裝），並依畫面提示選擇是否保留相容的現有儲存資料。
 
 首次使用時，安裝程式會下載必要工具和精靈圖、產生 LittleFS，並建立對應板子的完整韌體。此過程需要互聯網，可能需要一些時間；請勿在工作仍進行時關閉程式或拔除 USB 線。安裝程式會以快閃記憶體容量判別 1.75 或 1.75C。
 
@@ -69,7 +69,7 @@ Windows 可能會顯示未簽署程式的安全提示。請先確認程式來自
 2. 將複本命名為 `Additional_assets.zip`，再依[額外資產指南](ADDITIONAL_ASSETS_GUIDE.md)更換圖片或音效。
 3. 保留 `sample_Additional_assets.zip` 作為備份，並把兩個 ZIP 與安裝程式放在同一資料夾。
 
-若兩個 ZIP 都存在，安裝程式會優先使用 `Additional_assets.zip`。缺少或損壞的檔案會先詢問你是否以樣本檔補上；重複音效檔必須自行清理。只有在你有權使用的素材才可加入。自備素材只會在你的電腦上處理，不會上載至外部伺服器。
+若兩個 ZIP 都存在，安裝程式會優先使用 `Additional_assets.zip`。缺少或損壞的檔案會先詢問你是否以樣本檔補上；重複音效檔必須自行清理。只有在你有權使用的素材才可加入。自備素材只會在你的電腦上處理，不會上載至外部伺服器。更換素材後，按「새로고침」（重新整理）。
 
 安裝程式首次執行時建立的檔案會存放於程式旁的 `TamaPoke-Flasher-Data` 資料夾：
 
@@ -93,7 +93,7 @@ TamaPoke-Flasher-Data\
 
 ### 安裝程式找不到額外資產
 
-請確認 `sample_Additional_assets.zip` 與執行檔位於同一資料夾；如果使用自備資產，請檢查 `Additional_assets.zip` 的檔名和內部資料夾結構。更換素材後按「重新整理」。
+請確認 `sample_Additional_assets.zip` 與執行檔位於同一資料夾；如果使用自備資產，請檢查 `Additional_assets.zip` 的檔名和內部資料夾結構。更換素材後按「새로고침」（重新整理）。
 
 ### Windows 安裝程式找不到裝置
 

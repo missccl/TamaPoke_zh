@@ -28,7 +28,7 @@
 
 1. 從[本專案的 GitHub Releases](https://github.com/missccl/TamaPoke_zh/releases)下載公開安裝程式 ZIP 並解壓。
 2. 將裝置喚醒，使用 USB-C 資料線連接 Windows 10/11 電腦。
-3. 執行 `TamaPoke-Flasher-v*.exe`，按「重新整理」確認資產狀態，再按「自動檢查並安裝」。
+3. 執行 `TamaPoke-Flasher-v*.exe`，按「새로고침」（重新整理）確認資產狀態，再按「자동 확인 후 설치」（自動檢查並安裝）。
 
 Windows 安裝程式會以快閃記憶體容量識別 1.75（16 MB）或 1.75C（32 MB），並可按你的選擇備份／還原已辨識的 TamaPoke 儲存資料。首次執行需連接互聯網以下載安裝工具和精靈圖；無須預先安裝 Arduino 或 Python。
 

@@ -1,7 +1,7 @@
 MIT License
 
 Copyright (c) 2026 Quique Tortosa
-Copyright (c) 2026 ccs21 (Korean edition modifications)
+Copyright (c) 2026 ccs21 (Hong Kong Traditional Chinese edition modifications)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ SOFTWARE.
 Scope notice
 
 This MIT license applies only to the original TamaPoke source code and the
-Korean edition source-code modifications in this repository. It does not grant
+Hong Kong Traditional Chinese edition source-code modifications in this repository. It does not grant
 rights to Pokémon names, characters, designs, trademarks, sprite artwork,
 user-supplied images or audio, or any other third-party material. Third-party
 code and data remain subject to their own notices and licenses. See README.md,
