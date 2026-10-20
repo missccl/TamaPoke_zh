@@ -19,7 +19,7 @@ license; full license copies shipped with this repository are in `licenses/`.
 - License: SIL Open Font License 1.1
 - Full text: `licenses/NotoSansKR-OFL.txt`
 
-The firmware contains a generated Korean bitmap subset derived from this font.
+The firmware contains a generated Hong Kong Traditional Chinese bitmap subset derived from this font.
 The generated data header identifies that origin.
 
 ## Arduino ESP32 Core

@@ -65,8 +65,8 @@ if (-not $SkipFirmware) {
         $generatedStage = Join-Path $stage 'generated'
         New-Item -ItemType Directory -Force -Path $generatedStage | Out-Null
         foreach ($generatedName in @(
-            'dex_names_ko.h','help_ko.h','i18n_strings_ko.h',
-            'korean_font_data.h','manual_qr.h')) {
+            'dex_names_hk.h','help_hk.h','i18n_strings_hk.h',
+            'chinese_font_data.h','manual_qr.h')) {
             Copy-Item -LiteralPath (Join-Path $firmware "generated\$generatedName") -Destination $generatedStage
         }
         Copy-Item -LiteralPath (Join-Path $firmware $target.Partition) -Destination (Join-Path $stage 'partitions.csv')
@@ -97,7 +97,7 @@ if (-not $SkipFlasher) {
         -p:IncludeNativeLibrariesForSelfExtract=true -o $publish
     if ($LASTEXITCODE -ne 0) { throw 'Public flasher publish failed.' }
 
-    $package = Join-Path $release 'TamaPoke-Korean-Public-Flasher'
+    $package = Join-Path $release 'TamaPoke-HK-Public-Flasher'
     Reset-ChildDirectory $package $release
     Copy-Item -LiteralPath (Join-Path $publish 'TamaPokeFlasher.exe') -Destination (Join-Path $package $outputFileName)
     Copy-Item -LiteralPath (Join-Path $root 'samples\sample_Additional_assets.zip') -Destination $package
@@ -112,7 +112,7 @@ if (-not $SkipFlasher) {
     Copy-Item -LiteralPath (Join-Path $root 'docs\ADDITIONAL_ASSETS_GUIDE.md') -Destination $packageDocs
     Copy-Item -LiteralPath (Join-Path $root 'docs\ASSET_LAYOUT.svg') -Destination $packageDocs
     Copy-Item -LiteralPath (Join-Path $root 'docs\LEGAL.md') -Destination $packageDocs
-    Copy-Item -LiteralPath (Join-Path $root 'licenses\NotoSansKR-OFL.txt') -Destination $packageLicenses
+    Copy-Item -LiteralPath (Join-Path $root 'licenses\NotoSansCJK-OFL.txt') -Destination $packageLicenses
     Copy-Item -LiteralPath (Join-Path $root 'licenses\Arduino-ESP32-LICENSE.md') -Destination $packageLicenses
 
     $dotnetRoot = Split-Path -Parent (Get-Command dotnet).Source
