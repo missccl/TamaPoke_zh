@@ -100,7 +100,7 @@ class LinkWrites final : public BLECharacteristicCallbacks {
 class ClientEvents final : public BLEClientCallbacks {
   void onConnect(BLEClient *) override { state = COMM_CONNECTED; }
   void onDisconnect(BLEClient *) override {
-    if (state != COMM_OFF) setError("연결이 끊어졌습니다");
+    if (state != COMM_OFF) setError("連線中斷");
   }
 };
 
@@ -170,7 +170,7 @@ bool beginCommon(CommunicationMode requestedMode, const CommunicationPetData &lo
 bool communicationStartHost(CommunicationMode requestedMode, const CommunicationPetData &local) {
   if (!beginCommon(requestedMode, local, COMM_ROLE_HOST)) return false;
   server = BLEDevice::createServer();
-  if (!server) { setError("BLE 서버 생성 실패"); return false; }
+  if (!server) { setError("無法建立 BLE 伺服器"); return false; }
   server->setCallbacks(&serverEvents);
   BLEService *service = server->createService(serviceUuid);
   serverLink = service->createCharacteristic(
@@ -195,7 +195,7 @@ bool communicationStartGuest(CommunicationMode requestedMode, const Communicatio
   scan->setActiveScan(true);
   scan->setInterval(110);
   scan->setWindow(70);
-  if (!scan->start(0, nullptr, false)) { setError("BLE 검색 시작 실패"); return false; }
+  if (!scan->start(0, nullptr, false)) { setError("無法開始搜尋 BLE 裝置"); return false; }
   state = COMM_SCANNING;
   return true;
 }
@@ -223,22 +223,22 @@ void communicationPoll() {
   foundHost = false;
   state = COMM_CONNECTING;
   client = BLEDevice::createClient();
-  if (!client) { setError("BLE 클라이언트 생성 실패"); return; }
+  if (!client) { setError("無法建立 BLE 用戶端"); return; }
   client->setClientCallbacks(&clientEvents);
-  if (!client->connect(foundDevice)) { setError("상대 기기에 연결하지 못했습니다"); return; }
+  if (!client->connect(foundDevice)) { setError("無法連接對方裝置"); return; }
   BLERemoteService *service = client->getService(serviceUuid);
-  if (!service) { setError("통신 서비스를 찾지 못했습니다"); return; }
+  if (!service) { setError("找不到通訊服務"); return; }
   remoteLink = service->getCharacteristic(linkUuid);
-  if (!remoteLink) { setError("통신 채널을 찾지 못했습니다"); return; }
+  if (!remoteLink) { setError("找不到通訊頻道"); return; }
   String hostValue = remoteLink->readValue();
   if (hostValue.length() != sizeof(CommunicationPetData)) {
-    setError("상대 포켓몬 정보를 읽지 못했습니다");
+    setError("無法讀取對方寶可夢資料");
     return;
   }
   CommunicationPetData hostPacket;
   memcpy(&hostPacket, hostValue.c_str(), sizeof(hostPacket));
   if (!validPet(hostPacket)) {
-    setError("호환되지 않는 통신 상대입니다");
+    setError("對方裝置不相容");
     return;
   }
   peerData = hostPacket;
@@ -246,7 +246,7 @@ void communicationPoll() {
   peerReady = true;
   if (remoteLink->canNotify()) remoteLink->registerForNotify(notifyPacket);
   if (!remoteLink->writeValue(reinterpret_cast<uint8_t *>(&localData), sizeof(localData), true)) {
-    setError("내 포켓몬 정보를 보내지 못했습니다");
+    setError("無法傳送我的寶可夢資料");
     return;
   }
   state = COMM_CONNECTED;

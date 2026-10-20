@@ -1,6 +1,6 @@
-#include "korean_canvas.h"
+#include "chinese_canvas.h"
 
-#include "generated/korean_font_data.h"
+#include "generated/chinese_font_data.h"
 
 namespace {
 
@@ -41,19 +41,19 @@ bool decodeUtf8Byte(uint8_t value, uint32_t &codepoint, uint8_t &remaining) {
 
 }  // namespace
 
-uint8_t KoreanCanvas::koreanPixelSize() const {
+uint8_t ChineseCanvas::chinesePixelSize() const {
   if (textsize_y <= 1) return 12;
   if (textsize_y == 2) return 16;
   if (textsize_y == 3) return 24;
   return 32;
 }
 
-int16_t KoreanCanvas::findGlyph(uint32_t codepoint) const {
+int16_t ChineseCanvas::findGlyph(uint32_t codepoint) const {
   int16_t low = 0;
-  int16_t high = KO_GLYPH_COUNT - 1;
+  int16_t high = HK_GLYPH_COUNT - 1;
   while (low <= high) {
     const int16_t middle = low + (high - low) / 2;
-    const uint32_t value = pgm_read_dword(&KO_CODEPOINTS[middle]);
+    const uint32_t value = pgm_read_dword(&HK_CODEPOINTS[middle]);
     if (value == codepoint) return middle;
     if (value < codepoint) low = middle + 1;
     else high = middle - 1;
@@ -61,32 +61,32 @@ int16_t KoreanCanvas::findGlyph(uint32_t codepoint) const {
   return -1;
 }
 
-void KoreanCanvas::drawCodepoint(uint32_t codepoint) {
+void ChineseCanvas::drawCodepoint(uint32_t codepoint) {
   const int16_t glyphIndex = findGlyph(codepoint);
   if (glyphIndex < 0) {
     Arduino_GFX::write('?');
     return;
   }
 
-  const uint8_t size = koreanPixelSize();
+  const uint8_t size = chinesePixelSize();
   const uint8_t *bitmaps = nullptr;
   uint16_t bytesPerGlyph = 0;
   switch (size) {
     case 12:
-      bitmaps = KO_FONT_12_BITMAPS;
-      bytesPerGlyph = KO_FONT_12_BYTES;
+      bitmaps = HK_FONT_12_BITMAPS;
+      bytesPerGlyph = HK_FONT_12_BYTES;
       break;
     case 16:
-      bitmaps = KO_FONT_16_BITMAPS;
-      bytesPerGlyph = KO_FONT_16_BYTES;
+      bitmaps = HK_FONT_16_BITMAPS;
+      bytesPerGlyph = HK_FONT_16_BYTES;
       break;
     case 24:
-      bitmaps = KO_FONT_24_BITMAPS;
-      bytesPerGlyph = KO_FONT_24_BYTES;
+      bitmaps = HK_FONT_24_BITMAPS;
+      bytesPerGlyph = HK_FONT_24_BYTES;
       break;
     default:
-      bitmaps = KO_FONT_32_BITMAPS;
-      bytesPerGlyph = KO_FONT_32_BYTES;
+      bitmaps = HK_FONT_32_BITMAPS;
+      bytesPerGlyph = HK_FONT_32_BYTES;
       break;
   }
 
@@ -118,7 +118,7 @@ void KoreanCanvas::drawCodepoint(uint32_t codepoint) {
   cursor_x += size;
 }
 
-size_t KoreanCanvas::write(uint8_t value) {
+size_t ChineseCanvas::write(uint8_t value) {
   if (utf8Remaining_ == 0 && value < 0x80) {
     return Arduino_GFX::write(value);
   }
@@ -131,7 +131,7 @@ size_t KoreanCanvas::write(uint8_t value) {
   return 1;
 }
 
-int16_t KoreanCanvas::textWidth(const char *text) const {
+int16_t ChineseCanvas::textWidth(const char *text) const {
   if (!text) return 0;
   int16_t lineWidth = 0;
   int16_t maxWidth = 0;
@@ -143,7 +143,7 @@ int16_t KoreanCanvas::textWidth(const char *text) const {
       if (lineWidth > maxWidth) maxWidth = lineWidth;
       lineWidth = 0;
     } else if (codepoint != '\r') {
-      lineWidth += codepoint < 0x80 ? 6 * textsize_x : koreanPixelSize();
+      lineWidth += codepoint < 0x80 ? 6 * textsize_x : chinesePixelSize();
     }
     codepoint = 0;
   }

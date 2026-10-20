@@ -17,7 +17,7 @@
 #include <esp_timer.h>
 #include <cstring>
 #include "Arduino_GFX_Library.h"
-#include "korean_canvas.h"
+#include "chinese_canvas.h"
 #include "TouchDrvCSTXXX.hpp"
 #include "pin_config.h"
 #include "species.h"
@@ -38,7 +38,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION_BASE "1.48.7-ko"
+#define FW_VERSION_BASE "1.48.7-hk"
 #if TAMAPOKE_BOARD_175C
   #define FW_VERSION FW_VERSION_BASE "-175c"
 #else
@@ -52,7 +52,7 @@ Arduino_DataBus *bus = new Arduino_ESP32QSPI(
 Arduino_CO5300 *panel = new Arduino_CO5300(
   bus, LCD_RESET, 0 /*rotation*/, LCD_WIDTH, LCD_HEIGHT, 6, 0, 0, 0);
 // Framebuffer completo en PSRAM: dibujamos todo y hacemos flush() (sin parpadeo)
-KoreanCanvas *gfx = new KoreanCanvas(LCD_WIDTH, LCD_HEIGHT, panel);
+ChineseCanvas *gfx = new ChineseCanvas(LCD_WIDTH, LCD_HEIGHT, panel);
 
 TouchDrvCST92xx touch;
 Pet pet;
@@ -913,7 +913,7 @@ void renderPowerMenu() {
   gfx->fillScreen(UI_BG_NIGHT);
   gfx->setTextColor(UI_WHITE);
   gfx->setTextSize(4);
-  const char *title = "전원";
+  const char *title = "電源";
   gfx->setCursor(CX - gfx->textWidth(title) / 2, 58);
   gfx->print(title);
 
@@ -921,21 +921,21 @@ void renderPowerMenu() {
   gfx->drawRoundRect(76, 142, 314, 66, 17, UI_WHITE);
   gfx->setTextColor(UI_WHITE);
   gfx->setTextSize(3);
-  const char *off = "전원 끄기";
+  const char *off = "關閉電源";
   gfx->setCursor(CX - gfx->textWidth(off) / 2, 163);
   gfx->print(off);
 
   gfx->fillRoundRect(76, 230, 314, 66, 17, UI_BAR_OK);
   gfx->drawRoundRect(76, 230, 314, 66, 17, UI_WHITE);
   gfx->setTextColor(UI_INK);
-  const char *sleep = "슬립";
+  const char *sleep = "休眠";
   gfx->setCursor(CX - gfx->textWidth(sleep) / 2, 251);
   gfx->print(sleep);
 
   gfx->fillRoundRect(146, 354, 174, 46, 13, UI_WHITE);
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(2);
-  const char *cancel = "취소";
+  const char *cancel = "取消";
   gfx->setCursor(CX - gfx->textWidth(cancel) / 2, 368);
   gfx->print(cancel);
   gfx->flush();
@@ -945,7 +945,7 @@ void drawPoweringOff() {
   gfx->fillScreen(0x0000);
   gfx->setTextColor(UI_WHITE);
   gfx->setTextSize(3);
-  const char *message = "전원을 끄는 중...";
+  const char *message = "正在關閉電源...";
   gfx->setCursor(CX - gfx->textWidth(message) / 2, 218);
   gfx->print(message);
   gfx->flush();
@@ -964,7 +964,7 @@ void performPowerOff() {
   simulatedPoweredOff = true;
   screenOff = true;
   screenOffAt = millis();
-  addSimulatorEvent(L"전원 메뉴: 전원 끄기");
+  addSimulatorEvent(L"電源選單：關閉電源");
   return;
 #else
   // Persist the exact wall time and every pending action before the AXP2101
@@ -2633,7 +2633,7 @@ void onTap(int16_t x, int16_t y) {
         pet.feedCandy();
         sfxPlay(SFX_EAT);
       } else if (pet.fullness >= 100) {
-        snprintf(statusNoticeMsg, sizeof(statusNoticeMsg), "배가 불러...!");
+        snprintf(statusNoticeMsg, sizeof(statusNoticeMsg), "吃得好飽...！");
         statusNoticeUntil = millis() + 2600UL;
         sfxPlay(SFX_DENY);
       } else {
@@ -3068,7 +3068,7 @@ void render() {
     gfx->fillRoundRect(72, 172, 322, 96, 18, UI_WHITE);
     gfx->drawRoundRect(72, 172, 322, 96, 18, UI_INK);
     char invite[64];
-    snprintf(invite, sizeof(invite), "%s가 놀러왔다!", dexName(friendInviteDex));
+    snprintf(invite, sizeof(invite), "%s來玩了！", dexName(friendInviteDex));
     gfx->setTextColor(UI_INK);
     gfx->setTextSize(2);
     gfx->setCursor(CX - gfx->textWidth(invite) / 2, 208);
@@ -3129,11 +3129,11 @@ void drawGameMenu() {
   gfx->drawRoundRect(78, 112, 310, 266, 18, UI_INK);
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(3);
-  const char *title = "놀이";
+  const char *title = "遊戲";
   gfx->setCursor(CX - gfx->textWidth(title) / 2, 124);
   gfx->print(title);
-  const char *labels[6] = { "달려 피카츄", "깨워 잠만보", "냠냠 이브이",
-                            "뿅뿅 디그다", "뛰어 잉어킹", "산책" };
+  const char *labels[6] = { "奔跑吧！皮卡丘", "叫醒卡比獸", "伊布吃點心",
+                            "地鼠出擊", "鯉魚王跳躍", "散步" };
   uint16_t cols[6] = { UI_BAR_BAD, UI_BAR_WARN, 0x4C98, UI_BAR_OK, 0xF3B7, 0xA51F };
   for (int i = 0; i < 6; i++) {
     const GameMenuTile &t = GAME_MENU_TILES[i];
@@ -3270,7 +3270,7 @@ float updateTimedGameSpeed(uint32_t now) {
 
 void drawSpeedUpNotice(uint32_t now) {
   if (now >= miniSpeedNoticeUntil) return;
-  const char *notice = "속도 UP!";
+  const char *notice = "速度提升！";
   gfx->fillRoundRect(163, 112, 140, 38, 11, UI_BAR_WARN);
   gfx->drawRoundRect(163, 112, 140, 38, 11, UI_INK);
   gfx->setTextColor(UI_INK);
@@ -3351,7 +3351,7 @@ void drawActivityResult(uint16_t record, const char *rewardText) {
     gfx->setCursor(CX - gfx->textWidth(T(S_NEW_RECORD)) / 2, 239);
     gfx->print(T(S_NEW_RECORD));
   }
-  const char *resultText = gameScore ? rewardText : "0점 - 보상 X";
+  const char *resultText = gameScore ? rewardText : "0 分 - 沒有獎勵";
   gfx->setTextColor(gameScore ? ink : UI_BAR_BAD);
   gfx->setCursor(CX - gfx->textWidth(resultText) / 2, 278);
   gfx->print(resultText);
@@ -3416,7 +3416,7 @@ void drawSnorlaxLayer(uint8_t layer, int16_t x, int16_t y, uint8_t scale) {
 
 void renderRunnerGame() {
   uint32_t now = millis();
-  if (gameOverUntil) { drawActivityResult(pet.gameHi, "속도와 기분이 올랐어!"); return; }
+  if (gameOverUntil) { drawActivityResult(pet.gameHi, "速度和心情提升了！"); return; }
   if (now >= miniUntil) { finishActivityGame(); return; }
   uint32_t dt = activityDelta(now);
   float timedSpeed = updateTimedGameSpeed(now);
@@ -3474,7 +3474,7 @@ void renderRunnerGame() {
   }
   for (uint8_t lane = 0; lane < 3; lane++)
     gfx->drawLine(42, 190 + lane * 86, 424, 190 + lane * 86, C565(0xe9, 0xf5, 0xd8));
-  drawActivityHeader("달려 피카츄", pet.gameHi, now);
+  drawActivityHeader("奔跑吧！皮卡丘", pet.gameHi, now);
   for (auto &obstacle : runnerObstacles) if (obstacle.active && miniPmdB.loaded)
     drawPmdActM(miniPmdB, miniPmdB.has(PMD_WALKR) ? PMD_WALKR : PMD_IDLE,
                 (int)obstacle.x, 188 + obstacle.lane * 86, now, true, false, 2);
@@ -3496,10 +3496,10 @@ void renderRunnerGame() {
 
 void renderSnorlaxGame() {
   uint32_t now = millis();
-  if (gameOverUntil) { drawActivityResult(pet.catchHi, "방어와 체력이 올랐어!"); return; }
+  if (gameOverUntil) { drawActivityResult(pet.catchHi, "防禦和體力提升了！"); return; }
   if (snorlaxAwake) {
     drawGameScene();
-    drawActivityHeader("깨워 잠만보", pet.catchHi, now);
+    drawActivityHeader("叫醒卡比獸", pet.catchHi, now);
     drawSnorlaxLayer(SNORLAX_AWAKE, 59, 100, 3);
     if (now - snorlaxAwakeAt >= 1200UL) finishActivityGame();
     gfx->flush();
@@ -3507,9 +3507,9 @@ void renderSnorlaxGame() {
   }
   if (snorlaxTimerStarted && now >= miniUntil) { finishActivityGame(); return; }
   drawGameScene();
-  drawActivityHeader("깨워 잠만보", pet.catchHi, now);
+  drawActivityHeader("叫醒卡比獸", pet.catchHi, now);
   gfx->setTextColor(UI_INK); gfx->setTextSize(2);
-  const char *guide = "잠만보를 두드려 깨우자!";
+  const char *guide = "敲敲卡比獸，叫醒牠吧！";
   gfx->setCursor(CX - gfx->textWidth(guide) / 2, 112); gfx->print(guide);
   int shake = 0;
   uint32_t hitAge = now - snorlaxHitAt;
@@ -3538,7 +3538,7 @@ void renderSnorlaxGame() {
 
 void renderEeveeGame() {
   uint32_t now = millis();
-  if (gameOverUntil) { drawActivityResult(pet.memoHi, "기분과 배부름이 올랐어!"); return; }
+  if (gameOverUntil) { drawActivityResult(pet.memoHi, "心情和飽足度提升了！"); return; }
   if (now >= miniUntil) { finishActivityGame(); return; }
   uint32_t dt = activityDelta(now);
   float timedSpeed = updateTimedGameSpeed(now);
@@ -3587,7 +3587,7 @@ void renderEeveeGame() {
   gfx->fillRect(0, 220, 466, 246, C565(0xb8, 0xdc, 0x83));
   gfx->drawLine(0, 220, 465, 220, C565(0x62, 0x9b, 0x4c));
   gfx->fillRoundRect(54, 322, 358, 7, 3, C565(0x82, 0xb4, 0x58));
-  drawActivityHeader("냠냠 이브이", pet.memoHi, now);
+  drawActivityHeader("伊布吃點心", pet.memoHi, now);
   for (auto &object : fallingObjects) if (object.active) {
     if (object.kind == 3 && miniPmdB.loaded)
       drawPmdActM(miniPmdB, PMD_IDLE, (int)object.x, (int)object.y + 54,
@@ -3621,7 +3621,7 @@ PmdMon &jumpObstaclePmd(uint8_t kind) {
 
 void renderMagikarpGame() {
   uint32_t now = millis();
-  if (gameOverUntil) { drawActivityResult(pet.typeHi, "기분과 체력이 올랐어!"); return; }
+  if (gameOverUntil) { drawActivityResult(pet.typeHi, "心情和體力提升了！"); return; }
   if (now >= miniUntil) { finishActivityGame(); return; }
   uint32_t dt = activityDelta(now);
   float timedSpeed = updateTimedGameSpeed(now);
@@ -3675,7 +3675,7 @@ void renderMagikarpGame() {
   int scroll = (int)magikarpBackgroundOffset;
   gfx->drawLine(30, 338, 436, 338, UI_INK);
   for (int x = 40 - scroll; x < 450; x += 72) gfx->fillRect(x, 344, 34, 5, C565(0x8d, 0x66, 0x3f));
-  drawActivityHeader("뛰어 잉어킹", pet.typeHi, now);
+  drawActivityHeader("鯉魚王跳躍", pet.typeHi, now);
   for (auto &obstacle : jumpObstacles) if (obstacle.active) {
     PmdMon &actor = jumpObstaclePmd(obstacle.kind);
     int ground = obstacle.kind == 2 ? 235 : 338;
@@ -3688,7 +3688,7 @@ void renderMagikarpGame() {
   gfx->fillRoundRect(148, 382, 170, 50, 13, UI_WHITE);
   gfx->drawRoundRect(148, 382, 170, 50, 13, UI_INK);
   gfx->setTextColor(UI_INK); gfx->setTextSize(2);
-  const char *jump = "점프";
+  const char *jump = "跳躍";
   gfx->setCursor(CX - gfx->textWidth(jump) / 2, 398); gfx->print(jump);
   drawActivityLives();
   drawSpeedUpNotice(now);
@@ -4199,7 +4199,7 @@ void startWalk() {
   }
   if (!pet.canStartWalk()) {
     walkStartFailed = false;
-    snprintf(statusNoticeMsg, sizeof(statusNoticeMsg), "먼저 포켓몬을 돌봐주세요");
+    snprintf(statusNoticeMsg, sizeof(statusNoticeMsg), "請先照顧寶可夢");
     statusNoticeUntil = millis() + 3500UL;
     sfxPlay(SFX_DENY);
     return;
@@ -4316,13 +4316,13 @@ void renderWalk() {
   } else if (walkSteps > 0) {
     gfx->setTextColor(UI_BAR_WARN);
     gfx->setTextSize(2);
-    const char *joy = "기분 +20";
+    const char *joy = "心情 +20";
     gfx->setCursor(CX - gfx->textWidth(joy) / 2, 238);
     gfx->print(joy);
   } else {
     gfx->setTextColor(UI_BAR_BAD);
     gfx->setTextSize(2);
-    const char *none = "0걸음 - 보상 X";
+    const char *none = "0 步 - 沒有獎勵";
     gfx->setCursor(CX - gfx->textWidth(none) / 2, 238);
     gfx->print(none);
   }
@@ -4374,7 +4374,7 @@ void drawGameResult(const char *recordFmt, uint16_t record, StrId gainFmt) {
   gfx->print(buf);
   char gain[18];
   if (gameScore) snprintf(gain, sizeof(gain), T(gainFmt), gameGain);
-  else snprintf(gain, sizeof(gain), "0점 - 보상 X");
+  else snprintf(gain, sizeof(gain), "0 分 - 沒有獎勵");
   gfx->setTextColor(gameScore ?
                     (gainFmt == S_DEF_GAIN_FMT ? 0x4C98 : (gainFmt == S_HYG_GAIN_FMT ? UI_BAR_OK : UI_BAR_WARN)) :
                     UI_BAR_BAD);
@@ -5694,7 +5694,7 @@ void drawBattleButtonLabel(int x, int y, int w, const char *label) {
 }
 
 const char *battleTypeName(uint8_t type) {
-  return typeNameKo(type);
+  return typeNameHk(type);
 }
 
 uint16_t battleTypeColor(uint8_t type) {
@@ -6602,8 +6602,8 @@ void renderBattle() {
     gfx->print(res);
     char rounds[20], dealt[32], received[32];
     snprintf(rounds, sizeof(rounds), T(S_ROUNDS_FMT), battleRun.round);
-    snprintf(dealt, sizeof(dealt), "준 피해 %u", battleRun.playerDamageTotal);
-    snprintf(received, sizeof(received), "받은 피해 %u", battleRun.enemyDamageTotal);
+    snprintf(dealt, sizeof(dealt), "造成傷害 %u", battleRun.playerDamageTotal);
+    snprintf(received, sizeof(received), "受到傷害 %u", battleRun.enemyDamageTotal);
     gfx->setTextColor(ink);
     gfx->setTextSize(2);
     gfx->setCursor(CX - gfx->textWidth(rounds) / 2, 316);
@@ -6846,7 +6846,7 @@ void startManualTimeEntry() {
 
 void finishCorrectedTime(uint32_t epoch) {
   if (timeReason == TIME_REASON_RTC_RECOVERY && timeGuardAtOpen && epoch <= timeGuardAtOpen) {
-    std::strncpy(timeStatusText, "저장된 시간 이후로 입력해 주세요.", sizeof(timeStatusText) - 1);
+    std::strncpy(timeStatusText, "請輸入晚於已儲存時間的日期和時間。", sizeof(timeStatusText) - 1);
     timeStatusText[sizeof(timeStatusText) - 1] = 0;
     if (timePanel == TIME_PANEL_CONNECTING) {
       wifiTimeStop();
@@ -6857,7 +6857,7 @@ void finishCorrectedTime(uint32_t epoch) {
   }
   rtcSetEpoch(epoch);
   if (!rtcEpoch()) {
-    std::strncpy(timeStatusText, "기기에 시간을 저장하지 못했습니다.", sizeof(timeStatusText) - 1);
+    std::strncpy(timeStatusText, "無法將時間儲存至裝置。", sizeof(timeStatusText) - 1);
     timeStatusText[sizeof(timeStatusText) - 1] = 0;
     if (timePanel == TIME_PANEL_CONNECTING) {
       wifiTimeStop();
@@ -6984,7 +6984,7 @@ const char *powerSaveLabel() {
 }
 
 const char *careModeLabel() {
-  return pet.tamagotchiModeEnabled() ? "다마고치" : "포케타마";
+  return pet.tamagotchiModeEnabled() ? "寵物機" : "寶可夢夥伴";
 }
 
 void drawStatusLine(int y, const char *label, const char *value, uint16_t valueColor) {
@@ -7079,7 +7079,7 @@ void renderHelp() {
   gfx->fillScreen(UI_BG_DAY);
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(3);
-  const char *h = helpWordKo();
+  const char *h = helpWordHk();
   gfx->setCursor(CX - gfx->textWidth(h) / 2, 42);
   gfx->print(h);
 
@@ -7101,12 +7101,12 @@ void renderHelp() {
 
   gfx->setTextSize(2);
   gfx->setTextColor(UI_INK);
-  const char *scan = "스마트폰으로 QR 코드를 스캔하세요";
+  const char *scan = "請用手機掃描 QR Code";
   gfx->setCursor(CX - gfx->textWidth(scan) / 2, 362);
   gfx->print(scan);
   gfx->fillRoundRect(178, 402, 110, 40, 12, UI_BAR_OK);
   gfx->setTextColor(UI_INK);
-  const char *ok = helpOkKo();
+  const char *ok = helpOkHk();
   gfx->setCursor(178 + (110 - gfx->textWidth(ok)) / 2, 414);
   gfx->print(ok);
   gfx->flush();
@@ -7259,18 +7259,18 @@ void renderTimeChoice() {
   gfx->fillScreen(UI_BG_DAY);
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(3);
-  const char *title = "시간 보정";
+  const char *title = "時間校正";
   gfx->setCursor(CX - gfx->textWidth(title) / 2, 54);
   gfx->print(title);
   gfx->setTextSize(2);
-  const char *line1 = "지금 시간을 보정하려면";
-  const char *line2 = "Wi-Fi 연결이 필요해요.";
+  const char *line1 = "如要校正目前時間，";
+  const char *line2 = "請連接 Wi-Fi。";
   gfx->setCursor(CX - gfx->textWidth(line1) / 2, 132);
   gfx->print(line1);
   gfx->setCursor(CX - gfx->textWidth(line2) / 2, 164);
   gfx->print(line2);
-  drawTimeButton(78, 238, 310, 54, "Wi-Fi 연결", UI_BAR_OK, UI_INK);
-  drawTimeButton(78, 312, 310, 54, "일자·시간 수동 입력");
+  drawTimeButton(78, 238, 310, 54, "連接 Wi-Fi", UI_BAR_OK, UI_INK);
+  drawTimeButton(78, 312, 310, 54, "手動輸入日期和時間");
   if (timeStatusText[0]) {
     gfx->setTextColor(UI_BAR_BAD);
     gfx->setTextSize(1);
@@ -7283,14 +7283,14 @@ void renderWifiApList() {
   gfx->fillScreen(UI_BG_DAY);
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(3);
-  const char *title = "Wi-Fi 선택";
+  const char *title = "選擇 Wi-Fi";
   gfx->setCursor(CX - gfx->textWidth(title) / 2, 25);
   gfx->print(title);
   gfx->setTextSize(1);
   gfx->setTextColor(UI_INK);
   const WifiTimeState state = wifiTimeState();
-  const char *status = state == WIFI_TIME_SCANNING ? "주변 네트워크 검색 중..." :
-                       state == WIFI_TIME_ERROR ? wifiTimeError() : "10초마다 목록을 새로 확인해요.";
+  const char *status = state == WIFI_TIME_SCANNING ? "正在搜尋附近的網絡..." :
+                       state == WIFI_TIME_ERROR ? wifiTimeError() : "每 10 秒重新整理清單。";
   gfx->setCursor(CX - gfx->textWidth(status) / 2, 62);
   gfx->print(status);
 
@@ -7308,7 +7308,7 @@ void renderWifiApList() {
     gfx->setCursor(70, y + 9);
     gfx->print(ap->ssid);
     char detail[24];
-    snprintf(detail, sizeof(detail), "%s %lddBm", ap->secure ? "잠금" : "개방", (long)ap->rssi);
+    snprintf(detail, sizeof(detail), "%s %lddBm", ap->secure ? "加密" : "開放", (long)ap->rssi);
     gfx->setTextSize(1);
     gfx->setTextColor(UI_INK);
     gfx->setCursor(298, y + 28);
@@ -7317,13 +7317,13 @@ void renderWifiApList() {
   if (count == 0 && state != WIFI_TIME_SCANNING) {
     gfx->setTextColor(UI_INK);
     gfx->setTextSize(2);
-    const char *none = "검색된 Wi-Fi가 없습니다.";
+    const char *none = "找不到 Wi-Fi 網絡。";
     gfx->setCursor(CX - gfx->textWidth(none) / 2, 220);
     gfx->print(none);
   }
-  drawTimeButton(60, 402, 100, 38, "이전");
-  drawTimeButton(173, 402, 120, 38, "돌아가기");
-  drawTimeButton(306, 402, 100, 38, "다음");
+  drawTimeButton(60, 402, 100, 38, "上一頁");
+  drawTimeButton(173, 402, 120, 38, "返回");
+  drawTimeButton(306, 402, 100, 38, "下一頁");
 }
 
 const char *wifiKeyLabel(uint8_t mode, uint8_t key) {
@@ -7357,7 +7357,7 @@ void renderWifiPassword() {
   for (uint8_t i = start; i < wifiPasswordLen && out < sizeof(shown) - 1; ++i)
     shown[out++] = wifiPassword[i];
   gfx->setCursor(76, 70);
-  gfx->print(shown[0] ? shown : "비밀번호");
+  gfx->print(shown[0] ? shown : "密碼");
 
   static const char *MODES[4] = {"123", "ABC", "abc", "!?#"};
   for (uint8_t i = 0; i < 4; ++i) {
@@ -7377,27 +7377,27 @@ void renderWifiPassword() {
     gfx->setCursor(CX - gfx->textWidth(timeStatusText) / 2, 383);
     gfx->print(timeStatusText);
   }
-  drawTimeButton(66, 406, 150, 38, "취소");
-  drawTimeButton(250, 406, 150, 38, "연결", UI_BAR_OK, UI_INK);
+  drawTimeButton(66, 406, 150, 38, "取消");
+  drawTimeButton(250, 406, 150, 38, "連接", UI_BAR_OK, UI_INK);
 }
 
 void renderWifiConnecting() {
   gfx->fillScreen(UI_BG_DAY);
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(3);
-  const char *title = wifiTimeState() == WIFI_TIME_NTP ? "시간 확인 중" : "Wi-Fi 연결 중";
+  const char *title = wifiTimeState() == WIFI_TIME_NTP ? "正在確認時間" : "正在連接 Wi-Fi";
   gfx->setCursor(CX - gfx->textWidth(title) / 2, 110);
   gfx->print(title);
   gfx->setTextSize(2);
   gfx->setTextColor(UI_INK);
   gfx->setCursor(CX - gfx->textWidth(wifiSelectedSsid) / 2, 184);
   gfx->print(wifiSelectedSsid);
-  const char *hint = wifiTimeState() == WIFI_TIME_NTP ? "온라인으로 한국 시간을 받고 있어요." :
-                                                       "잠시만 기다려 주세요.";
+  const char *hint = wifiTimeState() == WIFI_TIME_NTP ? "正在從網上取得香港時間。" :
+                                                       "請稍候。";
   gfx->setTextSize(1);
   gfx->setCursor(CX - gfx->textWidth(hint) / 2, 236);
   gfx->print(hint);
-  drawTimeButton(158, 338, 150, 42, "취소");
+  drawTimeButton(158, 338, 150, 42, "取消");
 }
 
 void formatManualEntry(char *out, size_t size) {
@@ -7412,7 +7412,7 @@ void renderManualTime() {
   gfx->fillScreen(UI_BG_DAY);
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(3);
-  const char *title = "일자·시간 입력";
+  const char *title = "輸入日期和時間";
   gfx->setCursor(CX - gfx->textWidth(title) / 2, 24);
   gfx->print(title);
   char entry[24];
@@ -7432,8 +7432,8 @@ void renderManualTime() {
     const int y = 138 + (key / 3) * 58;
     if (key != 9) drawTimeButton(x, y, 94, 50, KEYS[key]);
   }
-  drawTimeButton(72, 406, 150, 38, "취소");
-  drawTimeButton(244, 406, 150, 38, "확인", UI_BAR_OK, UI_INK);
+  drawTimeButton(72, 406, 150, 38, "取消");
+  drawTimeButton(244, 406, 150, 38, "確定", UI_BAR_OK, UI_INK);
 }
 
 void renderSettingsPanel() {
@@ -7460,8 +7460,8 @@ void renderSettingsPanel() {
   gfx->setCursor(CX - gfx->textWidth(timeText) / 2, 84);
   gfx->print(timeText);
 
-  drawTimeButton(44, 176, 182, 46, "Wi-Fi 시간보정");
-  drawTimeButton(240, 176, 182, 46, "수동 보정");
+  drawTimeButton(44, 176, 182, 46, "Wi-Fi 校時");
+  drawTimeButton(240, 176, 182, 46, "手動校時");
 
   uint8_t sndMode = audioMode();
   const char *sl = soundModeLabel();
@@ -7489,7 +7489,7 @@ void renderSettingsPanel() {
   gfx->setCursor(LANG_PILL_X + (LANG_PILL_W - gfx->textWidth(lp)) / 2, LANG_PILL_Y + 8);
   gfx->print(lp);
 
-  drawTimeButton(64, 326, 134, 40, helpWordKo());
+  drawTimeButton(64, 326, 134, 40, helpWordHk());
   drawTimeButton(210, 326, 192, 40, T(S_RESET_DATA), UI_WHITE, UI_BAR_BAD);
 
   char fwLine[34];
@@ -7648,7 +7648,7 @@ void clockTap(int16_t x, int16_t y) {
     }
     if (y >= 400 && x >= 238) {
       if (wifiPasswordLen < 8) {
-        strncpy(timeStatusText, "비밀번호는 8자 이상 입력해 주세요.", sizeof(timeStatusText) - 1);
+        strncpy(timeStatusText, "密碼至少須輸入 8 個字元。", sizeof(timeStatusText) - 1);
       } else {
         wifiTimeStartConnect(wifiSelectedSsid, wifiPassword);
         timePanel = TIME_PANEL_CONNECTING;
@@ -7688,7 +7688,7 @@ void clockTap(int16_t x, int16_t y) {
     }
     if (y >= 400 && x >= 234) {
       if (manualTimeLen != 12) {
-        strncpy(timeStatusText, "12자리를 모두 입력해 주세요.", sizeof(timeStatusText) - 1);
+        strncpy(timeStatusText, "請輸入全部 12 個數字。", sizeof(timeStatusText) - 1);
       } else {
         const int year = (manualTimeDigits[0] - '0') * 1000 + (manualTimeDigits[1] - '0') * 100 +
                          (manualTimeDigits[2] - '0') * 10 + manualTimeDigits[3] - '0';
@@ -7698,7 +7698,7 @@ void clockTap(int16_t x, int16_t y) {
         const int minute = (manualTimeDigits[10] - '0') * 10 + manualTimeDigits[11] - '0';
         uint32_t epoch = 0;
         if (!makeWallEpoch(year, month, day, hour, minute, epoch))
-          strncpy(timeStatusText, "일자와 시간을 확인해 주세요.", sizeof(timeStatusText) - 1);
+          strncpy(timeStatusText, "請確認日期和時間。", sizeof(timeStatusText) - 1);
         else finishCorrectedTime(epoch);
       }
       clockDirty = true;
@@ -7806,7 +7806,7 @@ void renderCardMoves() {
   const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(4);
-  const char *title = "기술";
+  const char *title = "招式";
   gfx->setCursor(CX - gfx->textWidth(title) / 2, 34);
   gfx->print(title);
   char head[34];
@@ -7903,7 +7903,7 @@ void renderCardProfile() {
   gfx->print(head);
   gfx->setTextColor(UI_TRACK);
   gfx->setTextSize(2);
-  const char *rename = "이름을 누르면 변경";
+  const char *rename = "點擊名稱即可更改";
   gfx->setCursor(CX - gfx->textWidth(rename) / 2, 78);
   gfx->print(rename);
 
@@ -7916,7 +7916,7 @@ void renderCardProfile() {
   gfx->setCursor(CX - gfx->textWidth(level) / 2, 320);
   gfx->print(level);
   char days[32];
-  snprintf(days, sizeof(days), "함께한 지 %lu일", (unsigned long)(pet.ageMinutes / 1440UL));
+  snprintf(days, sizeof(days), "相伴 %lu 日", (unsigned long)(pet.ageMinutes / 1440UL));
   gfx->setTextColor(UI_TRACK);
   gfx->setTextSize(2);
   gfx->setCursor(CX - gfx->textWidth(days) / 2, 352);
@@ -7926,7 +7926,7 @@ void renderCardProfile() {
                       : pet.lovesBerry(1) ? T(S_BERRY_BLUE)
                                           : T(S_BERRY_GREEN);
   char berryLine[46];
-  snprintf(berryLine, sizeof(berryLine), "좋아하는 나무열매: %s", berry);
+  snprintf(berryLine, sizeof(berryLine), "喜歡的果實：%s", berry);
   gfx->setCursor(CX - gfx->textWidth(berryLine) / 2, 376);
   gfx->print(berryLine);
 }
@@ -8007,11 +8007,11 @@ void renderCardPersonality() {
   gfx->setTextSize(2);
   gfx->setCursor(CX - gfx->textWidth(T(S_RECORDS)) / 2, 264);
   gfx->print(T(S_RECORDS));
-  drawPersonalityRecord(52, 290, "피카츄", pet.gameHi, UI_BAR_OK);
-  drawPersonalityRecord(178, 290, "잠만보", pet.catchHi, UI_BAR_WARN);
-  drawPersonalityRecord(304, 290, "이브이", pet.memoHi, 0x4C98);
-  drawPersonalityRecord(52, 334, "디그다", pet.diglettHi, UI_BAR_BAD);
-  drawPersonalityRecord(178, 334, "잉어킹", pet.typeHi, 0xF3B7);
+  drawPersonalityRecord(52, 290, "皮卡丘", pet.gameHi, UI_BAR_OK);
+  drawPersonalityRecord(178, 290, "卡比獸", pet.catchHi, UI_BAR_WARN);
+  drawPersonalityRecord(304, 290, "伊布", pet.memoHi, 0x4C98);
+  drawPersonalityRecord(52, 334, "地鼠", pet.diglettHi, UI_BAR_BAD);
+  drawPersonalityRecord(178, 334, "鯉魚王", pet.typeHi, 0xF3B7);
   drawPersonalityRecord(304, 334, T(S_BATTLE), pet.bestBattleStreak, UI_BAR_BAD);
 }
 
@@ -8020,8 +8020,8 @@ const char *dailyGoalLabel(uint8_t goalType) {
     case DAILY_GOAL_CARE: return T(S_GOAL_CARE);
     case DAILY_GOAL_PLAY: return T(S_GOAL_PLAY);
     case DAILY_GOAL_BATTLE: return T(S_GOAL_BATTLE);
-    case DAILY_GOAL_ITEM: return "아이템 사용";
-    case DAILY_GOAL_WALK: return "산책하기";
+    case DAILY_GOAL_ITEM: return "使用道具";
+    case DAILY_GOAL_WALK: return "散步";
     default: return T(S_GOAL_CARE);
   }
 }
@@ -8251,23 +8251,23 @@ void renderCardStats() {
   BattleStats actual = petBattleStats();
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(3);
-  const char *title = "상태";
+  const char *title = "狀態";
   gfx->setCursor(CX - gfx->textWidth(title) / 2, 40);
   gfx->print(title);
   drawStatusTile(54, 84, T(S_STAT_ATK), actual.atk, 260, UI_BAR_BAD);
   drawStatusTile(242, 84, T(S_STAT_DEF), actual.def, 260, 0x4C98);
   drawStatusTile(54, 150, T(S_STAT_SPE), actual.spe, 260, UI_BAR_WARN);
-  drawStatusTile(242, 150, "몸무게", pet.weight, 100, 0xB3C8);
-  drawStatusTile(54, 216, "배부름", pet.fullness, 100, UI_BAR_WARN);
-  drawStatusTile(242, 216, "기분", pet.joy, 100, C565(0xd4, 0x52, 0x7e));
-  drawStatusTile(54, 282, "체력", pet.energy, 100, UI_BAR_OK);
-  drawStatusTile(242, 282, "청결", pet.hygiene, 100, 0x4C98);
+  drawStatusTile(242, 150, "體重", pet.weight, 100, 0xB3C8);
+  drawStatusTile(54, 216, "飽足", pet.fullness, 100, UI_BAR_WARN);
+  drawStatusTile(242, 216, "心情", pet.joy, 100, C565(0xd4, 0x52, 0x7e));
+  drawStatusTile(54, 282, "體力", pet.energy, 100, UI_BAR_OK);
+  drawStatusTile(242, 282, "清潔", pet.hygiene, 100, 0x4C98);
 
   char weightHint[44];
-  if (pet.weight >= 80) snprintf(weightHint, sizeof(weightHint), "무거움: 공방 +12%% / 속도 -18%%");
-  else if (pet.weight >= 60) snprintf(weightHint, sizeof(weightHint), "무거움: 공방 +8%% / 속도 -10%%");
-  else if (pet.weight >= 40) snprintf(weightHint, sizeof(weightHint), "무거움: 공방 +4%% / 속도 -4%%");
-  else snprintf(weightHint, sizeof(weightHint), "몸무게 보정 없음");
+  if (pet.weight >= 80) snprintf(weightHint, sizeof(weightHint), "體重偏高：攻防 +12%%／速度 -18%%");
+  else if (pet.weight >= 60) snprintf(weightHint, sizeof(weightHint), "體重偏高：攻防 +8%%／速度 -10%%");
+  else if (pet.weight >= 40) snprintf(weightHint, sizeof(weightHint), "體重偏高：攻防 +4%%／速度 -4%%");
+  else snprintf(weightHint, sizeof(weightHint), "沒有體重修正");
   gfx->setTextColor(UI_TRACK);
   gfx->setTextSize(2);
   gfx->setCursor(CX - gfx->textWidth(weightHint) / 2, 358);
@@ -8457,12 +8457,12 @@ void renderExpeditionTrainChoice() {
 void renderItemsHub() {
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(3);
-  const char *title = "아이템";
+  const char *title = "道具";
   gfx->setCursor(CX - gfx->textWidth(title) / 2, 44);
   gfx->print(title);
   gfx->setTextColor(UI_TRACK);
   gfx->setTextSize(2);
-  const char *hint = "사용할 아이템을 선택하세요";
+  const char *hint = "請選擇要使用的道具";
   gfx->setCursor(CX - gfx->textWidth(hint) / 2, 78);
   gfx->print(hint);
 
@@ -8481,7 +8481,7 @@ void renderItemsHub() {
   gfx->print(discs);
   gfx->setTextColor(UI_TRACK);
   gfx->setTextSize(2);
-  const char *moveHint = "기술 페이지에서 사용";
+  const char *moveHint = "請在招式頁使用";
   gfx->setCursor(CX - gfx->textWidth(moveHint) / 2, 326);
   gfx->print(moveHint);
   if (expeditionTrainChoiceOpen) renderExpeditionTrainChoice();
@@ -9190,12 +9190,12 @@ void renderBattleHub() {
   gfx->fillRoundRect(72, 190, 322, 78, 16, UI_BAR_BAD);
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(4);
-  const char *start = "배틀 시작";
+  const char *start = "開始對戰";
   gfx->setCursor(CX - gfx->textWidth(start) / 2, 212);
   gfx->print(start);
   gfx->setTextColor(UI_TRACK);
   gfx->setTextSize(3);
-  const char *hint = "야생 포켓몬과 겨룹니다";
+  const char *hint = "與野生寶可夢對戰";
   gfx->setCursor(CX - gfx->textWidth(hint) / 2, 300);
   gfx->print(hint);
 }
@@ -10095,7 +10095,7 @@ const char *statusMsg() {
   statusNoticeUntil = 0;
   if (pet.evolving()) return T(S_EVOLVING);
   if (pet.sitterActive(pet.lastSeenEpoch)) return T(S_SITTER_ACTIVE);
-  if (bathUntil) return "깨끗하게 씻자~";
+  if (bathUntil) return "洗得乾乾淨淨吧～";
   if (pet.sleeping) return "Zzz...";
   if (pet.eating()) return T(S_EATING);
   if (pet.showHeart()) return T(S_LIKES);

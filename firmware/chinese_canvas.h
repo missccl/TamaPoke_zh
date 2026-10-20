@@ -2,9 +2,9 @@
 
 #include "Arduino_GFX_Library.h"
 
-class KoreanCanvas : public Arduino_Canvas {
+class ChineseCanvas : public Arduino_Canvas {
  public:
-  KoreanCanvas(int16_t w, int16_t h, Arduino_G *output, int16_t outputX = 0,
+  ChineseCanvas(int16_t w, int16_t h, Arduino_G *output, int16_t outputX = 0,
                int16_t outputY = 0, uint8_t rotation = 0)
       : Arduino_Canvas(w, h, output, outputX, outputY, rotation) {}
 
@@ -17,8 +17,8 @@ class KoreanCanvas : public Arduino_Canvas {
 
 
   // Every positioned text run starts a new UTF-8 sequence. If a formatted
-  // buffer was truncated in the middle of a Korean glyph, carrying that
-  // decoder state into the next label turns its first three bytes into "???".
+  // buffer was truncated in the middle of a multibyte glyph, carrying that
+  // decoder state into the next label can turn its first bytes into "???".
   void setCursor(int16_t x, int16_t y) {
     utf8Codepoint_ = 0;
     utf8Remaining_ = 0;
@@ -27,7 +27,7 @@ class KoreanCanvas : public Arduino_Canvas {
 
   size_t write(uint8_t value) override;
   int16_t textWidth(const char *text) const;
-  uint8_t koreanPixelSize() const;
+  uint8_t chinesePixelSize() const;
 
  private:
   uint32_t utf8Codepoint_ = 0;

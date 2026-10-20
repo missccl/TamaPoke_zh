@@ -1,8 +1,8 @@
 #pragma once
 #include <Arduino.h>
 
-// Legacy language values are kept for save compatibility. The Korean build
-// always returns Korean strings and ignores language changes.
+// Legacy language values are kept for save compatibility. This build always
+// returns Hong Kong Traditional Chinese strings and ignores language changes.
 enum Lang : uint8_t { LANG_ES = 0, LANG_EN, LANG_FR, LANG_DE, LANG_IT, LANG_PT, LANG_COUNT };
 #define LANG_DEFAULT LANG_EN  // idioma por defecto: ingles
 
@@ -110,11 +110,11 @@ const char *dexName(int16_t dex); // nombre de Pokemon en el idioma activo
 const char *medalName(int i);  // banner de medalla (MED_COUNT)
 const char *medalLabel(int i); // etiqueta corta de medalla
 const char *medalDesc(int i);  // descripcion larga de medalla
-const char *typeNameKo(uint8_t type);
-const char *helpWordKo();
-const char *helpOkKo();
-const char *helpTitleKo(uint8_t page);
-const char *helpLineKo(uint8_t page, uint8_t line);
+const char *typeNameHk(uint8_t type);
+const char *helpWordHk();
+const char *helpOkHk();
+const char *helpTitleHk(uint8_t page);
+const char *helpLineHk(uint8_t page, uint8_t line);
 
 void loadLang();             // lee el idioma de NVS (llamar en setup)
 void setLang(Lang l);        // cambia y persiste el idioma
