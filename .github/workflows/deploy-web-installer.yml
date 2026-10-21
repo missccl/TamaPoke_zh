@@ -1,0 +1,83 @@
+name: Deploy Web Installer
+
+# Deploys the browser installer package from a published GitHub Release to
+# GitHub Pages (Settings → Pages → Source = GitHub Actions).
+#
+# Expected release asset name: TamaPoke-Web-Installer-v*.zip
+# produced by Build-Public.ps1.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag that contains TamaPoke-Web-Installer-v*.zip
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-web-installer
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Resolve release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          elif [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="$(gh release list -R "${{ github.repository }}" --limit 20 --json tagName,isDraft,isPrerelease \
+              --jq '[.[] | select(.isDraft==false)][0].tagName')"
+          fi
+          if [ -z "${TAG}" ] || [ "${TAG}" = "null" ]; then
+            echo "No published release found."
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Download web installer zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p download site
+          gh release download "${{ steps.tag.outputs.tag }}" -R "${{ github.repository }}" \
+            --pattern 'TamaPoke-Web-Installer-v*.zip' --dir download
+          ZIP="$(find download -maxdepth 1 -type f -name 'TamaPoke-Web-Installer-v*.zip' | head -n 1)"
+          if [ -z "${ZIP}" ]; then
+            echo "Release ${{ steps.tag.outputs.tag }} has no TamaPoke-Web-Installer-v*.zip asset."
+            exit 1
+          fi
+          unzip -q "${ZIP}" -d site
+          test -f site/index.html
+          test -f site/manifest.json
+          test -d site/firmware
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

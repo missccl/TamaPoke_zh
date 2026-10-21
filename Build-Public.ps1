@@ -97,7 +97,11 @@ if (-not $SkipFirmware) {
 
     $webInstaller = Join-Path $release 'TamaPoke-Web-Installer'
     Reset-ChildDirectory $webInstaller $release
-    Copy-Item -LiteralPath (Join-Path $root 'web-installer\index.html') -Destination $webInstaller
+    foreach ($webFile in @('index.html', 'installer.css', 'installer.js', 'tamapoke-icon.png', 'tamapoke-mark.svg')) {
+        $webSource = Join-Path $root "web-installer\$webFile"
+        if (-not (Test-Path -LiteralPath $webSource)) { throw "Missing web installer file: $webSource" }
+        Copy-Item -LiteralPath $webSource -Destination $webInstaller
+    }
     $webFirmware = Join-Path $webInstaller 'firmware'
     New-Item -ItemType Directory -Force -Path $webFirmware | Out-Null
     $webParts = @(
