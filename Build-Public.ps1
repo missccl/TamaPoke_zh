@@ -1,4 +1,4 @@
-param(
+﻿param(
     [switch]$SkipFirmware,
     [switch]$SkipFlasher,
     [switch]$KeepBuildCache
@@ -122,15 +122,26 @@ if (-not $SkipFirmware) {
             sha256 = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
         }
     }
+    # Build the display name from UTF-8 bytes so Windows PowerShell 5.1 does not
+    # mis-parse this script when the file is UTF-8 without a BOM (common on
+    # Chinese Windows, where PS 5.1 defaults to the ANSI code page).
+    $webManifestName = [Text.Encoding]::UTF8.GetString([byte[]]@(
+        0x54,0x61,0x6D,0x61,0x50,0x6F,0x6B,0x65,0x20,
+        0xE9,0xA6,0x99,0xE6,0xB8,0xAF,0xE7,0xB9,0x81,0xE9,0xAB,0x94,
+        0xE4,0xB8,0xAD,0xE6,0x96,0x87,0xEF,0xBC,0x88,
+        0x57,0x61,0x76,0x65,0x73,0x68,0x61,0x72,0x65,0x20,0x31,0x2E,0x37,0x35,
+        0xEF,0xBC,0x89
+    ))
+    $webBuild = [ordered]@{
+        chipFamily = 'ESP32-S3'
+        serialType = 'cdc'
+        parts = $manifestParts
+    }
     $manifest = [ordered]@{
-        name = 'TamaPoke 香港繁體中文（Waveshare 1.75）'
+        name = $webManifestName
         version = "$firmwareVersionBase-175"
         new_install_prompt_erase = $false
-        builds = @([ordered]@{
-            chipFamily = 'ESP32-S3'
-            serialType = 'cdc'
-            parts = $manifestParts
-        })
+        builds = @($webBuild)
     }
     $manifest | ConvertTo-Json -Depth 8 |
         Set-Content -LiteralPath (Join-Path $webInstaller 'manifest.json') -Encoding utf8
