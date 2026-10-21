@@ -20,16 +20,13 @@
 #define CEREMONY_MS 10000UL                // duracion de la despedida en pantalla
 #define FAREWELL_AGE_MIN (1UL * 24 * 60)   // se despide al dia de juego (en forma final)
 #define RUNAWAY_TICKS 60                   // se escapa tras 1 h con TODO a cero
-// Night, by the RTC: midnight to 06:00. Auto-sleep needs BOTH: the screen off
-// AND this window.
-// The screen alone would pause the game every time you put the device in a
-// pocket -- the creature is supposed to get hungry during the day. The hour
-// alone would send it to bed while you were playing. Set the clock in SETTINGS
-// or over the console with RTCSET; an unset board reads months out and simply
-// never auto-sleeps, which fails in the safe direction (it still drains, and
-// the light button still works by hand).
-#define NIGHT_START 0
-#define NIGHT_END 6
+// Night, by the RTC: 22:00 until 09:00. Auto-sleep runs once per night when
+// the player is back on the main screen. Waking with the light records that
+// night, so the pet does not go straight back to sleep. Screen-off during the
+// day does not put the pet to bed. An unset clock never auto-sleeps.
+#define NIGHT_START 22
+#define NIGHT_END 9
+enum : uint8_t { PLAY_RUN = 0, PLAY_WAKE, PLAY_CATCH, PLAY_DIG, PLAY_JUMP };
 enum : uint8_t { SLEEP_NONE = 0, SLEEP_AUTO, SLEEP_PLAYER };
 #define DEF_TRAIN_TICKS 60                 // minutos de bienestar por +1 de DEF
 #define ATK_TRAIN_ENERGY_COST 12           // fixed cost per completed session
@@ -312,6 +309,19 @@ public:
   uint8_t trMaxSpe() const { return trMaxFor(ivSpe); }
   void play();
   void toggleLight();
+  bool sitterActive() const;
+  bool canStartSitter() const;
+  bool startSitter();
+  void stopSitter();
+  void setAutomaticBedtimeBlocked(bool blocked) { bedtimeBlocked = blocked; }
+  bool canStartWalk() const;
+  bool beginWalk();
+  void cancelWalk();
+  void finishWalk(uint16_t steps);
+  bool walkPaused() const { return walkCarePaused; }
+  uint8_t applyMinigame(uint8_t kind, uint16_t score);
+  uint8_t takeRandomEvent();
+  int16_t lastVisitSpecies() const { return visitSpecies; }
   bool isNightHour() const;
   void setScreenOff(bool off);  // the sketch reports the PWR button
   bool screenIsOff = false;
@@ -516,6 +526,16 @@ private:
   void learnMoveNow(MoveId move);  // fill a slot or queue a replacement prompt
   void tick();
   void applyAutoSleep();
+  void applyAutomaticBedtime(uint32_t epoch);
+  void applySleepingMinute(uint32_t epoch);
+  int16_t pickVisitSpecies() const;
+  uint32_t sitterUntil = 0;
+  uint32_t eventNext = 0;
+  uint32_t automaticSleepNight = 0;
+  uint8_t sleepNeedMinutes = 0;
+  bool walkCarePaused = false;
+  bool bedtimeBlocked = false;
+  int16_t visitSpecies = 0;
   void hatch();
   void registerSpecies(int16_t dex);
   void save();

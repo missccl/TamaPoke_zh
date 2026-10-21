@@ -32,6 +32,7 @@
 #include "party.h"
 #include "save.h"
 #include "pet.h"
+#include "piggy_play.h"
 #include "sdmon.h"
 #include "rtcbat.h"
 #include "i18n.h"
@@ -792,9 +793,54 @@ bool requestActiveSwap(bool fromBox,uint16_t index) {
   return true;
 }
 
+static bool powerSave = false;
+static uint8_t brightStep = 2; // 2 matches the previous awake level; 3 is brighter
+static const uint8_t BRIGHT_USB[4] = { 80, 120, 180, 230 };
+static const uint8_t BRIGHT_BAT[4] = { 60, 100, 145, 200 };
+
+static void loadPowerUi() {
+  Preferences p;
+  p.begin("tamaui", true);
+  powerSave = p.getBool("psave", false);
+  brightStep = p.getUChar("brt", 2);
+  if (brightStep > 3) brightStep = 2;
+  p.end();
+}
+
+static void savePowerUi() {
+  Preferences p;
+  p.begin("tamaui", false);
+  p.putBool("psave", powerSave);
+  p.putUChar("brt", brightStep);
+  p.end();
+}
+
+static uint8_t awakeBrightness() {
+  uint8_t step = brightStep > 3 ? 2 : brightStep;
+  uint8_t v = usbPresent() ? BRIGHT_USB[step] : BRIGHT_BAT[step];
+  if (powerSave && v > 110) v = 110;
+  return v;
+}
+
+static bool sceneBlocksBedtime() {
+  if (piggyBusy() || pet.awaitingStarter() || pet.evolving() || pet.ceremony ||
+      pet.eating() || pet.showHeart() || pet.hasLearnOffer()) return true;
+  if (gameOpen || sackOpen || spdOpen || battleOpen || trainOpen || menuOpen ||
+      galleryOpen || cardOpen || clockOpen || kbOpen || partyOpen || gymOpen ||
+      lanOpen || pickOpen || playerOpen || movePickOpen || formsOpen || tradeOpen ||
+      choiceKind || confirmUntil || activeSwapBlocked || saveResetLocked) return true;
+  if (feedMenuUntil && millis() < feedMenuUntil) return true;
+  if (bathUntil && millis() < bathUntil) return true;
+#if defined(TAMAPOKE_EXPLORE_ENABLED)
+  if (exploreOpen) return true;
+#endif
+  return false;
+}
+
 void setup() {
   Serial.setRxBufferSize(8192);  // la transferencia a SD llega en bloques de 2 KB
   Serial.begin(115200);
+  loadPowerUi();
   // CRITICO: sin esto, Serial.print BLOQUEA el juego cuando no hay un
   // monitor serie abierto en el host (el bufer TX del USB CDC se llena
   // y nadie lo vacia) -> con timeout 0 los mensajes se descartan
@@ -817,7 +863,7 @@ void setup() {
   // QSPI a 80MHz (por defecto 40): el flush del framebuffer es el cuello de
   // botella del fps (~56ms a 40MHz). Si el panel mostrara basura, bajar a 40M.
   if (!gfx->begin(80000000)) Serial.println("gfx->begin() fallo");
-  panel->setBrightness(180);
+  panel->setBrightness(powerSave ? 110 : BRIGHT_USB[brightStep]);
 
   touch.setPins(TP_RESET, TP_INT);
   bool touchOk = false;
@@ -892,6 +938,7 @@ void ensureMon() {
 void loop() {
   if(saveResetLocked){handleTouch();renderReset();return;}
   if(activeSwapBlocked){handleTouch();renderSwapRecovery();return;}
+  pet.setAutomaticBedtimeBlocked(sceneBlocksBedtime());
   uint32_t now = millis();
 #ifndef ANDROID
   // Refresh BEFORE touch/care, including the first action just after midnight.
@@ -911,6 +958,7 @@ void loop() {
 #else
   if(!tradeStorageBlocked)pet.update(now);
 #endif
+  piggyTick(now, !screenOff && !sceneBlocksBedtime());
 
   // The link is pumped here rather than from the LAN screen, because it has to
   // keep running through the battle too: linkNowPoll() drains what the radio
@@ -983,11 +1031,12 @@ void loop() {
     lastPwr = now;
     if (pwrShortPressed()) {
       screenOff = !screenOff;
-      pet.setScreenOff(screenOff);   // asleep only if it is also night
+      pet.setScreenOff(screenOff);   // morning, with the screen on, ends an automatic night
       if (!screenOff) lastInteract = now;
     }
   }
 
+  if (piggyBusy()) lastInteract = now;
   updateBrightness(now);
 
   // vuelca el autoguardado periodico SOLO con la pantalla atenuada/apagada o
@@ -1001,7 +1050,7 @@ void loop() {
 
   // latido de salud cada 5 min (para el soak test; se descarta si no hay monitor)
   static uint32_t lastHealth = 0;
-  if (now - lastHealth > 300000) {
+  if (now - lastHealth > (powerSave ? 600000UL : 300000UL)) {
     lastHealth = now;
     Serial.printf("HEALTH up=%lus heap=%u min=%u\n", (unsigned long)(now / 1000),
                   ESP.getFreeHeap(), ESP.getMinFreeHeap());
@@ -1010,7 +1059,9 @@ void loop() {
   // 85 ms en juego/saco: margen seguro para que el redibujado no pise el envio
   // DMA del frame anterior (a 40-65 ms solapaba y causaba flashes negros; con
   // sprites grandes el dibujo tarda mas, asi que se deja colchon)
-  if (now - lastRender >= (uint32_t)((gameOpen || sackOpen || spdOpen) ? 85 : 100)) {
+  bool fastFrame = gameOpen || sackOpen || spdOpen || piggyFast();
+  uint32_t frameMs = fastFrame ? 85 : (powerSave ? 180 : 100);
+  if (now - lastRender >= frameMs) {
     lastRender = now;
     render();
   }
@@ -1024,7 +1075,7 @@ void updateBrightness(uint32_t now) {
   }
   uint32_t idle = now - lastInteract;
   dimStage = (idle > 300000) ? 2 : (idle > 90000) ? 1 : 0;
-  uint8_t target = pet.sleeping ? 25 : (usbPresent() ? 180 : 145);
+  uint8_t target = pet.sleeping ? 25 : awakeBrightness();
   if (dimStage == 1) target = pet.sleeping ? 10 : 60;
   else if (dimStage == 2) target = 8;
   if (screenOff) target = 0;
@@ -1313,7 +1364,8 @@ bool inPetZone(int16_t x, int16_t y) {
 // el toque se resuelve al LEVANTAR el dedo para distinguir tap de deslizar
 void handleTouch() {
   static uint32_t lastPoll = 0;
-  if (millis() - lastPoll < 20) return;  // 50 Hz le sobra a un dedo
+  uint32_t touchGap = (powerSave && !gameOpen && !sackOpen && !spdOpen && !piggyFast()) ? 50 : 20;
+  if (millis() - lastPoll < touchGap) return;  // 50 Hz le sobra a un dedo
   lastPoll = millis();
   // solo tocamos el bus si el chip aviso por INT o si el dedo sigue abajo (hay
   // que detectar el levantamiento). Leer el CST9217 dormido se colgaba ~1s y
@@ -1774,6 +1826,7 @@ void partyTap(int16_t x, int16_t y) {
 void onSwipe(int dir) {
   if(saveResetLocked)return;
   if(activeSwapBlocked)return;
+  if (piggyBusy()) { piggySwipe(); return; }
   if(tradeOpen){if(tradeDetail)tradeDetail=0;else if(tradeMenu==1)tradePage=(tradePage+(dir>0?50:1))%51;return;}
   if (boxOpen && boxSortOpen) {
     if(boxSortChoice) boxSortChoice=0; else boxSortOpen=false;
@@ -1916,6 +1969,7 @@ void onTap(int16_t x, int16_t y) {
     }
     return;
   }
+  if (piggyBusy()) { piggyTap(x, y); return; }
   if(tradeOpen){tradeTap(x,y);return;}
   if(formsOpen) {formsTap(x,y);return;}
   if (pet.awaitingStarter()) {  // primera partida: region y luego inicial
@@ -2058,6 +2112,12 @@ void onTap(int16_t x, int16_t y) {
     bool inPanel = (x >= TRAIN_X && x <= TRAIN_X + TRAIN_W &&
                     y >= TRAIN_Y && y <= TRAIN_Y + TRAIN_H);
     if (!inPanel) { trainOpen = false; return; }   // tap outside = back to the pet
+    if (y >= TRAIN_Y && y < TRAIN_ROW_Y(0)) {
+      trainOpen = false;
+      piggyOpenPlay();
+      sfxPlay(SFX_TAP);
+      return;
+    }
     for (int i = 0; i < 3; i++) {   // all three train something now
       int ry = TRAIN_ROW_Y(i);
       if (x < TRAIN_X + 18 || x > TRAIN_X + TRAIN_W - 18) continue;
@@ -2259,7 +2319,7 @@ void onTap(int16_t x, int16_t y) {
       if (uiButtonDisabled(i)) { sfxPlay(SFX_DENY); return; }
       sfxPlay(SFX_TAP);
       if (i == BTN_FOOD) feedMenuUntil = millis() + 6000;
-      else if (i == BTN_LIGHT) pet.toggleLight();
+      else if (i == BTN_LIGHT) piggyOpenSleep();
       else if (i == BTN_BATH) startBath();
       else trainOpen = true;
       return;
@@ -2449,6 +2509,7 @@ RTC_NOINIT_ATTR uint32_t gCrumbHeap;
 uint8_t uiCurrentScreen() {
   if(activeSwapBlocked)return SCR_CARD;
   if(formsOpen) return SCR_CARD;
+  if (piggyBusy()) return SCR_GAME;
   if (pet.awaitingStarter()) return starterRegionDone ? SCR_STARTER : SCR_REGION;
   if (galleryOpen) return galleryPick ? SCR_DEXPICK : SCR_GALLERY;
   if (movePickOpen) return SCR_MOVEPICK;
@@ -2515,6 +2576,7 @@ void render() {
   if(activeSwapBlocked){renderSwapRecovery();return;}
   if(tradeOpen){renderTrade();return;}
   if(formsOpen) {renderForms();return;}
+  if (piggyBusy()) { crumbDrop(); piggyRender(); return; }
   crumbDrop();   // so a crash can name the screen it happened on
   if (pet.awaitingStarter()) {  // primera partida: region y luego inicial
     if (!starterRegionDone) renderRegionPick(RPICK_FOR_START);
@@ -3247,29 +3309,47 @@ void renderClock() {
   gfx->setCursor(LANG_PILL_X + (LANG_PILL_W - textWidthFactor(lp, 12)) / 2, LANG_PILL_Y + 8);
   gfx->print(lp);
 
-  gfx->fillRoundRect(133, 340, 200, 48, 14, UI_BAR_OK);
+  // Power saving, then one extra brightness step above today's level.
+  {
+    const char *pl = powerSave ? T(S_PSAVE_ON) : T(S_PSAVE_OFF);
+    gfx->fillRoundRect(34, 332, 190, 30, 8, powerSave ? UI_BAR_WARN : UI_WHITE);
+    gfx->drawRoundRect(34, 332, 190, 30, 8, UI_INK);
+    gfx->setTextColor(UI_INK);
+    gfx->setTextSize(2);
+    gfx->setCursor(34 + (190 - textWidthFactor(pl, 12)) / 2, 340);
+    gfx->print(pl);
+    char bl[24];
+    snprintf(bl, sizeof(bl), T(S_BRIGHT_FMT), (unsigned)brightStep + 1);
+    gfx->fillRoundRect(240, 332, 190, 30, 8, UI_WHITE);
+    gfx->drawRoundRect(240, 332, 190, 30, 8, UI_INK);
+    gfx->setCursor(240 + (190 - textWidthFactor(bl, 12)) / 2, 340);
+    gfx->print(bl);
+  }
+
+  gfx->fillRoundRect(133, 370, 200, 40, 14, UI_BAR_OK);
   gfx->setTextColor(UI_BG_DAY);
   gfx->setTextSize(3);
-  gfx->setCursor(CX - 18, 352);
+  gfx->setCursor(CX - 18, 380);
   gfx->print(localName("OK"));
 
-  gfx->fillRoundRect(133,392,200,32,10,UI_WHITE);
-  gfx->drawRoundRect(133,392,200,32,10,UI_BAR_BAD);
+  gfx->fillRoundRect(133, 416, 200, 28, 10, UI_WHITE);
+  gfx->drawRoundRect(133, 416, 200, 28, 10, UI_BAR_BAD);
   gfx->setTextColor(UI_BAR_BAD);
-  tradeText(gLang==LANG_ZH?"重設存檔":"Reset save",400,1);
+  tradeText(gLang==LANG_ZH?"重設存檔":"Reset save",420,1);
 
   // version del firmware (discreta, abajo del todo)
   char ver[64];
   snprintf(ver, sizeof(ver), "TamaPoke v%s", DISPLAY_VERSION);
   gfx->setTextSize(1);
-  gfx->setCursor(CX - textWidthFactor(ver, 3), 436);
+  gfx->setTextColor(UI_INK);
+  gfx->setCursor(CX - textWidthFactor(ver, 3), 450);
   gfx->print(ver);
   gfx->flush();
 }
 
 void clockTap(int16_t x, int16_t y) {
   if(resetPanel){resetTap(x,y);return;}
-  if(x>=133 && x<=333 && y>=392 && y<=424){resetPanel=1;return;}
+  if(x>=133 && x<=333 && y>=416 && y<=444){resetPanel=1;return;}
 #ifndef ANDROID
   if (y >= 190 && y <= 248) {  // fila de botones +/-
     if (x >= 104 && x < 162) clockH = (clockH + 23) % 24;
@@ -3301,7 +3381,21 @@ void clockTap(int16_t x, int16_t y) {
       return;
     }
   }
-  if (y >= 340 && y <= 388 && x >= 133 && x <= 333) { applyClock(); return; }
+  if (y >= 332 && y <= 362) {
+    if (x >= 34 && x < 224) {
+      powerSave = !powerSave;
+      savePowerUi();
+      sfxPlay(SFX_TAP);
+      return;
+    }
+    if (x >= 240 && x < 430) {
+      brightStep = (uint8_t)((brightStep + 1) % 4);
+      savePowerUi();
+      sfxPlay(SFX_TAP);
+      return;
+    }
+  }
+  if (y >= 370 && y <= 410 && x >= 133 && x <= 333) { applyClock(); return; }
 }
 
 bool resetAllowed() {
@@ -6190,8 +6284,11 @@ void renderTrain() {
 
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - textWidthFactor(T(S_TRAIN), 6), TRAIN_Y + 20);
+  gfx->setCursor(CX - textWidthFactor(T(S_TRAIN), 6), TRAIN_Y + 12);
   gfx->print(T(S_TRAIN));
+  gfx->setTextSize(1);
+  gfx->setCursor(CX - textWidthFactor(T(S_PLAY), 3), TRAIN_Y + 34);
+  gfx->print(T(S_PLAY));
 
   const char *lbl[3] = { T(S_TR_ATK), T(S_TR_SPE), T(S_TR_DEF) };
   uint8_t cur[3] = { pet.trAtk, pet.trSpe, pet.trDef };
@@ -7410,6 +7507,7 @@ const char *statusMsg() {
   if (pet.evolving()) return T(S_EVOLVING);
   if (bathUntil) return "Splish splash!";  // onomatopeya universal
   if (pet.sleeping) return "Zzz...";
+  if (pet.sitterActive()) return T(S_SITTER_ON);
   if (pet.eating()) return T(S_EATING);
   if (pet.showHeart()) return T(S_LIKES);
   if (pet.fullness < 25) return T(S_HUNGRY);
