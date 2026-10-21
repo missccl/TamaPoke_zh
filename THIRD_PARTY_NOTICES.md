@@ -11,15 +11,15 @@ license; full license copies shipped with this repository are in `licenses/`.
 - Copyright: 2026 Quique Tortosa
 - License: MIT; the retained notice is in `LICENSE`.
 
-## Noto Sans KR
+## Noto Sans CJK HK
 
 - Source: <https://github.com/notofonts/noto-cjk>
 - Copyright notice: Copyright 2014-2021 Adobe, with Reserved Font Name
   `Source`
 - License: SIL Open Font License 1.1
-- Full text: `licenses/NotoSansKR-OFL.txt`
+- Full text: `licenses/NotoSansCJK-OFL.txt`
 
-The firmware contains a generated Korean bitmap subset derived from this font.
+The firmware contains a generated Hong Kong Traditional Chinese bitmap subset derived from this font.
 The generated data header identifies that origin.
 
 ## Arduino ESP32 Core
@@ -28,7 +28,7 @@ The generated data header identifies that origin.
 - License: GNU Lesser General Public License 2.1 and component-specific notices
 - Full project license: `licenses/Arduino-ESP32-LICENSE.md`
 
-The complete Korean-edition firmware source and build script are provided in
+The complete Hong Kong Traditional Chinese firmware source and build script are provided in
 this repository so recipients can rebuild the firmware with the identified
 Arduino core version.
 

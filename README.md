@@ -1,156 +1,63 @@
-# 타마포케 한글판
+# TamaPoke 香港繁體中文版
 
-Waveshare ESP32-S3-Touch-AMOLED-1.75 및 1.75C용 비공식·비상업 한글판
-펌웨어와 Windows 통합 플래셔의 공개 소스입니다.
+適用於 Waveshare ESP32-S3-Touch-AMOLED-1.75 和 1.75C 的非官方、非商業粉絲作品。本儲存庫提供韌體及 Windows 整合安裝程式的公開原始碼。
 
 > [!IMPORTANT]
-> 이 저장소와 공개 플래셔에는 포켓몬 스프라이트, 추가 음원 또는 스프라이트가
-> 결합된 완성 펌웨어가 들어 있지 않습니다. 설치에 필요한 스프라이트는 최종
-> 사용자의 PC가 원본 저장소에서 직접 내려받습니다. 공개 플래셔에는 ccs21이
-> 직접 제작한 기본 이미지 샘플과 음원 생략용 0바이트 표시 파일만 포함됩니다.
+> 儲存庫和公開安裝程式不包含寶可夢精靈圖、額外音效，亦不提供已整合這些資產的完整韌體。Windows 安裝程式會在你的電腦上從原始來源下載所需精靈圖；使用者自備資產亦只會在本機處理。
 
 > [!WARNING]
-> **플래셔가 생성한 완성 펌웨어(`*-full.bin`)를 제3자에게 재배포하지
-> 마십시오.** 완성 펌웨어에는 이 저장소의 MIT 소스 외에 다운로드한
-> 스프라이트와 사용자가 제공한 자산이 결합됩니다. 이들 자산은 MIT
-> 라이선스의 대상이 아니며, 재배포자는 각 자산의 이용 조건과 권리자의
-> 문제 제기에 대한 책임을 직접 부담할 수 있습니다.
+> 請勿把 Windows 安裝程式製作的完整韌體（`*-full.bin`）重新散佈。該映像包含本儲存庫程式碼以外、權利各異的下載精靈圖和使用者資產。
 
-## 프로젝트 계보
+## 安裝方式
 
-- 원본: [socquique/TamaPoke](https://github.com/socquique/TamaPoke)
-- 한글판 및 현행 기능 수정: ccs21
+### 瀏覽器安裝：Waveshare AMOLED 1.75
 
-원본 프로젝트를 바탕으로 펌웨어, UI, 전력 관리, 통신, 미니게임,
-Windows 플래셔와 자산 처리 방식을 광범위하게 변경했습니다.
-원저작자의 MIT 고지와 프로젝트 계보는 계속 유지합니다.
+公開基本韌體的瀏覽器安裝程式只支援 **Waveshare ESP32-S3-Touch-AMOLED-1.75（16 MB）**，不支援 1.75C。
 
-## 공개 범위
+1. 從[本專案的 GitHub Releases](https://github.com/missccl/TamaPoke_zh/releases)下載 `TamaPoke-Web-Installer-v*.zip`，解壓後把整個資料夾放到支援 HTTPS 的靜態網站。
+2. 使用最新版桌面版 Chrome 或 Microsoft Edge 開啟該網站。
+3. 用 USB-C 資料線連接裝置，按網頁上的安裝按鈕，並選擇 ESP32-S3 序列埠。
 
-이 저장소에 포함되는 것:
+瀏覽器必須支援 Web Serial，頁面亦必須透過 HTTPS 提供（`localhost` 除外）。Safari、Firefox 和手機瀏覽器不支援此安裝方式。安裝不會清除使用者資料，但更換韌體前仍建議先備份。
 
-- 1.75 및 1.75C 공용 펌웨어 소스
-- 자산이 없는 기본 프로그램을 만드는 빌드 스크립트
-- 사용자의 PC에서 자산을 준비하고 완성 펌웨어를 만드는 Windows 플래셔 소스
-- 직접 제작한 기본 이미지와 0바이트 오디오 표시 파일이 든 샘플 ZIP
-- 설치·자산 제작·라이선스 안내 문서
+瀏覽器套件只有基本程式，不包含寶可夢精靈圖、LittleFS 資產映像、額外音效或使用者資產；首次安裝後可能看不到精靈圖。如需完整資產安裝，請使用下方 Windows 安裝程式。
 
-포함되지 않는 것:
+### Windows 整合安裝程式：1.75 和 1.75C
 
-- 포켓몬 스프라이트 및 가공된 TPK3 스프라이트
-- 사용자가 별도로 준비한 맞춤 이미지와 실제 효과음·BGM
-- 개인용 프로젝트, 개인용 자산, 저장 데이터
-- 스프라이트와 추가 자산이 합쳐진 전체 펌웨어
+電腦和壓縮檔初次使用者，請先閱讀[安裝指南](docs/INSTALLATION_GUIDE.md)。
 
-## 설치 방법
+1. 從[本專案的 GitHub Releases](https://github.com/missccl/TamaPoke_zh/releases)下載公開安裝程式 ZIP 並解壓。
+2. 將裝置喚醒，使用 USB-C 資料線連接 Windows 10/11 電腦。
+3. 執行 `TamaPoke-Flasher-v*.exe`，按「새로고침」（重新整理）確認資產狀態，再按「자동 확인 후 설치」（自動檢查並安裝）。
 
-컴퓨터와 압축 파일 사용이 익숙하지 않다면
-[처음 설치하기 상세 안내](docs/INSTALLATION_GUIDE.md)를 먼저 읽어 주세요.
+Windows 安裝程式會以快閃記憶體容量識別 1.75（16 MB）或 1.75C（32 MB），並可按你的選擇備份／還原已辨識的 TamaPoke 儲存資料。首次執行需連接互聯網以下載安裝工具和精靈圖；無須預先安裝 Arduino 或 Python。
 
-1. GitHub 릴리스에서 공개 플래셔 ZIP을 받아 원하는 폴더에 풉니다.
-2. 압축을 풀면 `TamaPoke-Flasher-v2.2.6.exe`와 `sample_Additional_assets.zip`이 함께
-   들어 있습니다. 기본 설치에는 별도 자산 준비가 필요하지 않습니다.
-3. ESP32-S3 기기의 화면이 켜진 상태로 USB-C 데이터 케이블을 연결합니다.
-4. 플래셔를 실행하고 `새로고침`으로 자산 감지 상태를 확인합니다.
-5. `자동 확인 후 설치`를 누릅니다.
+## 香港名稱來源
 
-맞춤 이미지나 음원을 사용하려면 샘플 ZIP을 복사해 이름을
-`Additional_assets.zip`으로 바꾼 뒤 복사본만 수정하세요. 두 ZIP이 모두 있으면
-`Additional_assets.zip`을 우선하며, 누락되거나 손상된 항목은 사용자 확인 후
-샘플에서 보충할 수 있습니다. 중복 파일은 자동으로 처리하지 않습니다. 자세한
-방법은 [추가 자산 상세 제작 안내](docs/ADDITIONAL_ASSETS_GUIDE.md)를 확인하세요.
+- 151 種寶可夢名稱以 [PoGoMap-GUI 的香港繁體名稱資料](https://github.com/Go2Engle/PoGoMap-GUI/blob/master/PokeAlarm/defaults/alarms.zh_hk.json)作參考。
+- 招式名稱參考 [PokeAPI 的繁體中文招式資料](https://github.com/PokeAPI/pokeapi/blob/master/data/v2/csv/move_names.csv)。該資料標示為繁體中文，並非每個名稱都能證明是香港專用寫法；已知香港用語會優先採用。
 
-일반 사용자는 Arduino, Python 또는 별도의 빌드 환경을 준비할 필요가
-없습니다. 처음 실행할 때 플래셔가 필요한 설치 도구와 스프라이트를 내려받기
-때문에 인터넷 연결이 필요합니다. 플래셔는 플래시 용량으로 1.75(16MB)와
-1.75C(32MB)를 판별하고, 기존 한글판 저장 데이터는 사용자 선택에 따라
-백업·복원합니다.
+這些資料只作名稱翻譯參考，不代表官方授權或認可。
 
-## 게임 개요 및 변경사항 안내
+## 資產與授權
 
-한국어 전용 UI와 1.75/1.75C 지원을 바탕으로 성장 속도, 케어 호출, 수면·시터와
-시간 보정·절전 구조를 휴대용 육성 게임에 맞게 다시 구성했습니다. 놀이 6종,
-기술 배틀·포획·도감·아이템·산책과 근거리 통신 배틀·짝짓기를 추가하거나 크게
-확장했으며, 공개판은 필요한 자산을 사용자 PC에서 준비해 빌드하도록 설계했습니다.
+Windows 安裝程式會從 [PMDCollab/SpriteCollab](https://github.com/PMDCollab/SpriteCollab) 下載所需精靈圖，並保留製作者資料、追蹤清單和授權副本。下載不會賦予額外使用權；請遵守其 [CC BY-NC 4.0](https://github.com/PMDCollab/SpriteCollab/blob/master/LICENSE.md) 條款和署名要求。
 
-기능별 규칙과 원본 대비 변경 내용은
-[게임 개요 및 상세 변경사항](docs/GAME_OVERVIEW_AND_CHANGES.md)을 확인하세요.
+可選的圖片及音效格式請參閱[額外資產指南](docs/ADDITIONAL_ASSETS_GUIDE.md)。自備資產只會在你的電腦上處理，不會上載至外部伺服器。
 
-## 플래셔가 내려받는 항목
+## 開發者建置
 
-- 1세대 151종의 일반·이로치 스프라이트 원본과 제작자 크레딧
-- Espressif가 배포하는 Windows용 esptool
-- mklittlefs 제작자가 배포하는 Windows용 mklittlefs
-
-도구 압축 파일은 코드에 고정된 SHA-256 값으로 검증합니다. 스프라이트는
-[PMDCollab/SpriteCollab](https://github.com/PMDCollab/SpriteCollab)에서
-필요한 동작만 내려받고, 투명 여백 제거와 팔레트 최적화를 거쳐 기기용 TPK3로
-변환합니다. 플래셔가 다운로드한다는 사실은 별도의 이용 권리를 부여하지
-않습니다.
-
-SpriteCollab은 해당 프로젝트가 게시한
-[CC BY-NC 4.0](https://github.com/PMDCollab/SpriteCollab/blob/master/LICENSE.md)
-조건과 제작자 표기를 확인해야 합니다. 플래셔는 `credit_names.txt`,
-`tracker.json`, 라이선스 사본을 캐시에 함께 보존합니다. 상업적 사용을
-전제로 한 도구가 아닙니다.
-
-## 파일과 캐시 위치
-
-플래셔가 다운로드하거나 생성한 모든 파일은 사용자가 확인하기 쉽도록
-실행 파일 옆의 `TamaPoke-Flasher-Data` 폴더에만 모읍니다.
-
-```text
-TamaPoke-Flasher-Data\
-├─ Cache\       다운로드한 스프라이트, 크레딧, 변환 자산, 완성 펌웨어
-├─ Payload\     다운로드한 설치 도구와 자산 없는 기본 프로그램
-├─ Logs\        설치 로그
-└─ Backups\     사용자가 선택한 저장 데이터 백업
-```
-
-같은 자산과 기종 조합은 내용 해시를 확인해 캐시를 재사용합니다. 다른 자산을
-적용하려면 ZIP 내용을 바꾼 뒤 플래셔의 `새로고침`을 누르면 됩니다. 모든
-캐시를 지우려면 플래셔를 종료한 뒤 `TamaPoke-Flasher-Data` 폴더를 삭제하면
-됩니다. 사용자 자산은 플래셔가 외부 서버에 업로드하지 않습니다.
-
-## 개발자 빌드
-
-개발 PC에는 다음 환경이 필요합니다.
-
-- Arduino CLI
-- ESP32 Arduino Core 3.3.11
-- .NET 10 SDK
-- GFX Library for Arduino 1.6.7
-- SensorLib 0.4.1
-- XPowersLib 0.3.3
-
-PowerShell에서 실행합니다.
+需要 Arduino CLI、ESP32 Arduino Core 3.3.11、.NET 10 SDK、GFX Library for Arduino 1.6.7、SensorLib 0.4.1 及 XPowersLib 0.3.3。於 PowerShell 執行：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Build-Public.ps1
 ```
 
-스크립트는 추가 자산이 없는 1.75/1.75C 기본 프로그램을 만들고, 그 기본
-프로그램만 포함한 단일 Windows 플래셔를 게시합니다. 사용자 자산,
-SpriteCollab 스프라이트, LittleFS 및 최종 전체 펌웨어는 사용자의 PC에서
-플래셔 실행 시 생성됩니다.
+腳本會建置兩款桌面安裝程式韌體，並另外輸出只供 1.75 使用的瀏覽器安裝資料夾及 ZIP。瀏覽器套件只包含基本韌體，不會加入精靈圖、LittleFS 資產或使用者檔案。
 
-## 권리와 라이선스
+## 專案及權利聲明
 
-본 프로젝트는 비공식·비상업 팬 프로젝트이며 The Pokémon Company,
-Nintendo, Creatures, GAME FREAK 및 Bandai와 제휴하거나 승인받지 않았습니다.
-관련 이름, 캐릭터, 디자인, 상표 및 기타 권리는 각 원권리자에게 있습니다.
-
-`LICENSE`의 MIT 조건은 원본 프로젝트 코드와 이 저장소의 코드 수정분에만
-적용됩니다. 포켓몬 관련 명칭·데이터, 다운로드한 스프라이트, 사용자가 넣은
-이미지·음원 및 제3자 라이브러리에는 각 권리와 라이선스가 별도로 적용됩니다.
-자세한 범위는 [법적·배포 구조 안내](docs/LEGAL.md), [크레딧](CREDITS.md),
-[제3자 고지](THIRD_PARTY_NOTICES.md)를 확인하세요.
-
-이 구조는 권리 없는 자산을 저장소와 플래셔에 직접 포함하지 않도록 설계한
-것이지, 특정 사용에 대한 법률적 보증이나 권리자의 승인을 뜻하지 않습니다.
-사용자와 재배포자는 자신이 제공하거나 배포하는 자료에 필요한 권리를 직접
-확인해야 합니다.
-
-- 공개 프로젝트: <https://github.com/ccs21/TamaPoke_Piggy_Kor>
-- 원본 프로젝트: <https://github.com/socquique/TamaPoke>
-- 게시자: ccs21
+- 本專案源自 [socquique/TamaPoke](https://github.com/socquique/TamaPoke)。
+- 遊戲、名稱、角色、設計和商標的權利均屬各自權利人。本專案與 The Pokémon Company、Nintendo、Creatures、GAME FREAK、Bandai 或 Waveshare 無關，亦未獲其認可。
+- `LICENSE` 的 MIT 條款只適用於原始程式碼及本儲存庫的程式碼修改，不涵蓋寶可夢相關資料、下載精靈圖、使用者資產或第三方程式庫。
+- 詳情請參閱[法律及發佈說明](docs/LEGAL.md)、[製作者名單](CREDITS.md)和[第三方聲明](THIRD_PARTY_NOTICES.md)。

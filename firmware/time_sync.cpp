@@ -9,7 +9,7 @@ namespace {
 constexpr uint8_t MAX_APS = 8;
 constexpr uint32_t CONNECT_TIMEOUT_MS = 20000UL;
 constexpr uint32_t NTP_TIMEOUT_MS = 15000UL;
-constexpr uint32_t KST_OFFSET_SECONDS = 9UL * 3600UL;
+constexpr uint32_t HKT_OFFSET_SECONDS = 8UL * 3600UL;
 constexpr uint32_t MIN_VALID_UTC_EPOCH = 1735689600UL;  // 2025-01-01 UTC
 
 WifiTimeState state = WIFI_TIME_OFF;
@@ -22,7 +22,7 @@ char selectedPassword[65] = {};
 char errorText[80] = {};
 
 void setError(const char *message) {
-  std::strncpy(errorText, message ? message : "연결에 실패했습니다.", sizeof(errorText) - 1);
+  std::strncpy(errorText, message ? message : "連線失敗。", sizeof(errorText) - 1);
   errorText[sizeof(errorText) - 1] = 0;
   state = WIFI_TIME_ERROR;
 }
@@ -67,7 +67,7 @@ void wifiTimeUpdate() {
     state = WIFI_TIME_READY;
   } else if (state == WIFI_TIME_CONNECTING && now - stageStartedAt >= 700UL) {
     if (std::strcmp(selectedPassword, "fail") == 0) {
-      setError("비밀번호를 확인해 주세요.");
+      setError("請確認密碼。");
     } else {
       state = WIFI_TIME_NTP;
       stageStartedAt = now;
@@ -75,7 +75,7 @@ void wifiTimeUpdate() {
   } else if (state == WIFI_TIME_NTP && now - stageStartedAt >= 900UL) {
     std::time_t utc = std::time(nullptr);
     if (utc < static_cast<std::time_t>(MIN_VALID_UTC_EPOCH)) utc = MIN_VALID_UTC_EPOCH;
-    syncedEpoch = static_cast<uint32_t>(utc) + KST_OFFSET_SECONDS;
+    syncedEpoch = static_cast<uint32_t>(utc) + HKT_OFFSET_SECONDS;
     state = WIFI_TIME_SUCCESS;
   }
 }
@@ -99,7 +99,7 @@ void wifiTimeStartScan() {
   WiFi.scanDelete();
   const int16_t result = WiFi.scanNetworks(true, true);
   if (result == WIFI_SCAN_FAILED) {
-    setError("주변 Wi-Fi 검색을 시작하지 못했습니다.");
+    setError("無法開始搜尋附近的 Wi-Fi。");
     return;
   }
   stageStartedAt = millis();
@@ -124,7 +124,7 @@ void wifiTimeUpdate() {
     const int16_t result = WiFi.scanComplete();
     if (result == WIFI_SCAN_RUNNING) return;
     if (result < 0) {
-      setError("주변 Wi-Fi를 검색하지 못했습니다.");
+      setError("無法搜尋附近的 Wi-Fi。");
       return;
     }
     apCount = 0;
@@ -152,11 +152,11 @@ void wifiTimeUpdate() {
 
   if (state == WIFI_TIME_CONNECTING) {
     if (WiFi.status() == WL_CONNECTED) {
-      configTime(0, 0, "kr.pool.ntp.org", "pool.ntp.org", "time.google.com");
+      configTime(0, 0, "hk.pool.ntp.org", "pool.ntp.org", "time.google.com");
       stageStartedAt = now;
       state = WIFI_TIME_NTP;
     } else if (now - stageStartedAt >= CONNECT_TIMEOUT_MS) {
-      setError("Wi-Fi에 연결하지 못했습니다.");
+      setError("無法連接 Wi-Fi。");
     }
     return;
   }
@@ -165,10 +165,10 @@ void wifiTimeUpdate() {
     const std::time_t utc = std::time(nullptr);
     // 이전 동기화값을 즉시 재사용하지 않도록 잠깐 기다린 뒤 수용한다.
     if (now - stageStartedAt >= 1200UL && utc >= static_cast<std::time_t>(MIN_VALID_UTC_EPOCH)) {
-      syncedEpoch = static_cast<uint32_t>(utc) + KST_OFFSET_SECONDS;
+      syncedEpoch = static_cast<uint32_t>(utc) + HKT_OFFSET_SECONDS;
       state = WIFI_TIME_SUCCESS;
     } else if (now - stageStartedAt >= NTP_TIMEOUT_MS) {
-      setError("온라인 시간 정보를 받지 못했어요.");
+      setError("無法取得網上時間資料。");
     }
   }
 }

@@ -46,7 +46,7 @@ public enum SaveDataChoice
     Cancel,
 }
 
-public sealed record FirmwareSaveInfo(string Version, bool IsKorean, bool HasExistingSave, string RawResponse);
+public sealed record FirmwareSaveInfo(string Version, bool IsCompatibleFirmware, bool HasExistingSave, string RawResponse);
 
 public sealed record BoardBasePayload(
     string AppPath, string BootloaderPath, string PartitionsPath, string BootAppPath);

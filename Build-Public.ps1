@@ -15,6 +15,12 @@ $flasherProject = Join-Path $flasher 'TamaPokeFlasher.csproj'
 $flasherVersion = ([xml](Get-Content -Raw -LiteralPath $flasherProject)).Project.PropertyGroup.Version | Select-Object -First 1
 if ([string]::IsNullOrWhiteSpace($flasherVersion)) { throw 'Flasher version is missing from the project file.' }
 $outputFileName = "TamaPoke-Flasher-v$flasherVersion.exe"
+$firmwareSource = Get-Content -LiteralPath (Join-Path $firmware 'TamaPoke_Final.ino')
+$versionLine = $firmwareSource | Where-Object { $_ -match '^#define FW_VERSION_BASE "([^"]+)"' } | Select-Object -First 1
+if (-not $versionLine -or $versionLine -notmatch '^#define FW_VERSION_BASE "([^"]+)"') {
+    throw 'Firmware base version is missing from TamaPoke_Final.ino.'
+}
+$firmwareVersionBase = $Matches[1]
 
 function Assert-ChildPath([string]$Path, [string]$Parent) {
     $full = [IO.Path]::GetFullPath($Path)
@@ -65,8 +71,8 @@ if (-not $SkipFirmware) {
         $generatedStage = Join-Path $stage 'generated'
         New-Item -ItemType Directory -Force -Path $generatedStage | Out-Null
         foreach ($generatedName in @(
-            'dex_names_ko.h','help_ko.h','i18n_strings_ko.h',
-            'korean_font_data.h','manual_qr.h')) {
+            'dex_names_hk.h','help_hk.h','i18n_strings_hk.h',
+            'chinese_font_data.h','manual_qr.h')) {
             Copy-Item -LiteralPath (Join-Path $firmware "generated\$generatedName") -Destination $generatedStage
         }
         Copy-Item -LiteralPath (Join-Path $firmware $target.Partition) -Destination (Join-Path $stage 'partitions.csv')
@@ -86,7 +92,47 @@ if (-not $SkipFirmware) {
             if (-not (Test-Path -LiteralPath $map[$suffix])) { throw "Missing output: $($map[$suffix])" }
             Copy-Item -LiteralPath $map[$suffix] -Destination (Join-Path $payload "base-$($target.Label)-$suffix") -Force
         }
+
     }
+
+    $webInstaller = Join-Path $release 'TamaPoke-Web-Installer'
+    Reset-ChildDirectory $webInstaller $release
+    Copy-Item -LiteralPath (Join-Path $root 'web-installer\index.html') -Destination $webInstaller
+    $webFirmware = Join-Path $webInstaller 'firmware'
+    New-Item -ItemType Directory -Force -Path $webFirmware | Out-Null
+    $webParts = @(
+        [pscustomobject]@{ File='bootloader.bin'; Source='bootloader.bin'; Offset=0x0 },
+        [pscustomobject]@{ File='partitions.bin'; Source='partitions.bin'; Offset=0x8000 },
+        [pscustomobject]@{ File='boot_app0.bin'; Source='boot_app0.bin'; Offset=0xe000 },
+        [pscustomobject]@{ File='app.bin'; Source='app.bin'; Offset=0x10000 }
+    )
+    $manifestParts = @()
+    foreach ($part in $webParts) {
+        $sourcePath = Join-Path $payload "base-1.75-$($part.Source)"
+        if (-not (Test-Path -LiteralPath $sourcePath)) { throw "Missing 1.75 web installer output: $sourcePath" }
+        $destination = Join-Path $webFirmware $part.File
+        Copy-Item -LiteralPath $sourcePath -Destination $destination
+        $manifestParts += [ordered]@{
+            path = "firmware/$($part.File)"
+            offset = $part.Offset
+            sha256 = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
+        }
+    }
+    $manifest = [ordered]@{
+        name = 'TamaPoke 香港繁體中文（Waveshare 1.75）'
+        version = "$firmwareVersionBase-175"
+        new_install_prompt_erase = $false
+        builds = @([ordered]@{
+            chipFamily = 'ESP32-S3'
+            serialType = 'cdc'
+            parts = $manifestParts
+        })
+    }
+    $manifest | ConvertTo-Json -Depth 8 |
+        Set-Content -LiteralPath (Join-Path $webInstaller 'manifest.json') -Encoding utf8
+    $webArchive = Join-Path $release "TamaPoke-Web-Installer-v$firmwareVersionBase-175.zip"
+    if (Test-Path -LiteralPath $webArchive) { Remove-Item -LiteralPath $webArchive -Force }
+    Compress-Archive -Path (Join-Path $webInstaller '*') -DestinationPath $webArchive -CompressionLevel Optimal
 }
 
 if (-not $SkipFlasher) {
@@ -97,7 +143,7 @@ if (-not $SkipFlasher) {
         -p:IncludeNativeLibrariesForSelfExtract=true -o $publish
     if ($LASTEXITCODE -ne 0) { throw 'Public flasher publish failed.' }
 
-    $package = Join-Path $release 'TamaPoke-Korean-Public-Flasher'
+    $package = Join-Path $release 'TamaPoke-HK-Public-Flasher'
     Reset-ChildDirectory $package $release
     Copy-Item -LiteralPath (Join-Path $publish 'TamaPokeFlasher.exe') -Destination (Join-Path $package $outputFileName)
     Copy-Item -LiteralPath (Join-Path $root 'samples\sample_Additional_assets.zip') -Destination $package
@@ -112,7 +158,7 @@ if (-not $SkipFlasher) {
     Copy-Item -LiteralPath (Join-Path $root 'docs\ADDITIONAL_ASSETS_GUIDE.md') -Destination $packageDocs
     Copy-Item -LiteralPath (Join-Path $root 'docs\ASSET_LAYOUT.svg') -Destination $packageDocs
     Copy-Item -LiteralPath (Join-Path $root 'docs\LEGAL.md') -Destination $packageDocs
-    Copy-Item -LiteralPath (Join-Path $root 'licenses\NotoSansKR-OFL.txt') -Destination $packageLicenses
+    Copy-Item -LiteralPath (Join-Path $root 'licenses\NotoSansCJK-OFL.txt') -Destination $packageLicenses
     Copy-Item -LiteralPath (Join-Path $root 'licenses\Arduino-ESP32-LICENSE.md') -Destination $packageLicenses
 
     $dotnetRoot = Split-Path -Parent (Get-Command dotnet).Source

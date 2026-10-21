@@ -1,7 +1,7 @@
 <Window x:Class="TamaPoke.Flasher.SaveDataDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="저장 데이터 확인"
+        Title="確認儲存資料"
         Width="520" Height="310" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="#08111F" Foreground="#F4F7FB"
@@ -30,13 +30,13 @@
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
-    <TextBlock x:Name="HeadingText" Text="저장 데이터 처리 방법을 선택하세요" FontSize="21" FontWeight="Bold" />
+    <TextBlock x:Name="HeadingText" Text="請選擇如何處理儲存資料" FontSize="21" FontWeight="Bold" />
     <StackPanel Grid.Row="1" Margin="0,18,0,18">
       <TextBlock x:Name="VersionText" Foreground="#BFD7EE" FontSize="14" />
       <TextBlock Margin="0,12,0,0" TextWrapping="Wrap" FontSize="14" LineHeight="22"
-                 Text="저장 데이터를 유지하면 PC에 안전하게 백업한 뒤 기기를 초기화하고, 새 펌웨어 설치가 끝난 후 다시 복원합니다." />
+                 Text="如選擇保留，安裝程式會先在電腦備份資料、重設裝置，並在安裝新韌體後還原資料。" />
       <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Foreground="#FFB2A8" FontSize="13"
-                 Text="삭제를 선택하면 현재 포켓몬과 도감, 아이템, 설정이 모두 사라집니다." />
+                 Text="如選擇刪除，現有寶可夢、圖鑑、道具和設定都會消失。" />
     </StackPanel>
     <Grid Grid.Row="2">
       <Grid.ColumnDefinitions>
@@ -44,11 +44,11 @@
         <ColumnDefinition Width="*" />
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
-      <Button Content="백업 후 유지" Background="#23704E" BorderBrush="#45A979"
+      <Button Content="備份並保留" Background="#23704E" BorderBrush="#45A979"
               Click="KeepButton_Click" />
-      <Button Grid.Column="1" Content="삭제 후 새로 설치" Background="#873A3A" BorderBrush="#C36161"
+      <Button Grid.Column="1" Content="刪除並重新安裝" Background="#873A3A" BorderBrush="#C36161"
               Click="DeleteButton_Click" />
-      <Button Grid.Column="2" Content="취소" Click="CancelButton_Click" />
+      <Button Grid.Column="2" Content="取消" Click="CancelButton_Click" />
     </Grid>
   </Grid>
 </Window>

@@ -194,7 +194,7 @@ public partial class MainWindow : Window
 
             string? backupHash = null;
             SaveDataChoice saveChoice;
-            if (installed is not { IsKorean: true })
+            if (installed is not { IsCompatibleFirmware: true })
             {
                 var proceed = MessageBox.Show(this,
                     "기존 TamaPoke 돼둥이 버전 펌웨어가 감지되지 않습니다.\n" +

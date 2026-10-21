@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>TamaPoke 香港繁體中文韌體安裝</title>
+  <script type="module" src="https://unpkg.com/esp-web-tools@10.1.1/dist/web/install-button.js?module"></script>
+  <style>
+    :root { color-scheme: light; font: 16px/1.6 system-ui, sans-serif; color: #20242b; background: #f2f5f8; }
+    body { max-width: 720px; margin: 0 auto; padding: 32px 20px; }
+    main { padding: 28px; border-radius: 18px; background: white; box-shadow: 0 8px 30px #17203318; }
+    h1 { margin-top: 0; line-height: 1.25; }
+    h2 { margin-top: 28px; font-size: 1.1rem; }
+    .notice { padding: 14px 16px; border-left: 4px solid #d27b00; background: #fff6e6; }
+    esp-web-install-button { display: block; margin: 24px 0; }
+    a { color: #075eb5; }
+    footer { margin-top: 24px; color: #58616e; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>TamaPoke 香港繁體中文韌體</h1>
+    <p>此安裝程式只支援 <strong>Waveshare ESP32-S3-Touch-AMOLED-1.75（16 MB）</strong>。</p>
+    <esp-web-install-button manifest="manifest.json"></esp-web-install-button>
+
+    <h2>安裝前準備</h2>
+    <ul>
+      <li>使用最新版桌面版 Chrome 或 Microsoft Edge，並以 HTTPS 開啟此頁面。</li>
+      <li>使用可傳輸資料的 USB-C 線，連接裝置後按上方按鈕，再選擇 ESP32-S3 序列埠。</li>
+      <li>安裝期間請勿拔除裝置。若瀏覽器未顯示序列埠，請檢查 USB 線、連接埠及系統權限。</li>
+    </ul>
+
+    <h2>公開韌體限制</h2>
+    <p class="notice">這是沒有附帶資產的公開基本韌體。它不會安裝寶可夢精靈圖、額外音效或使用者自備資產；首次安裝後可能看不到精靈圖。此頁只寫入基本韌體，不會建立含資產的 LittleFS 映像。</p>
+    <p>如要安裝精靈圖或自己的資產，請使用 Windows 版整合安裝程式；資產會在你的電腦上準備，並不會上載至本頁。</p>
+    <p>只適用於 Waveshare AMOLED 1.75，請勿用於 1.75C 或其他 ESP32-S3 裝置。安裝會更換韌體與分割區表；重要資料請先備份。</p>
+  </main>
+  <footer>
+    <p>非官方粉絲作品，與 The Pokémon Company、Nintendo、Creatures、GAME FREAK 或 Waveshare 無關。<a href="https://github.com/ccs21/TamaPoke_Piggy_Kor">專案原始碼</a></p>
+  </footer>
+</body>
+</html>

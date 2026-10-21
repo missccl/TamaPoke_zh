@@ -40,7 +40,7 @@ void wifiTimeStop();
 WifiTimeState wifiTimeState();
 uint8_t wifiTimeApCount();
 const WifiTimeAp *wifiTimeAp(uint8_t index);
-uint32_t wifiTimeEpoch();          // 한국 현지시각을 wall-clock epoch로 반환
+uint32_t wifiTimeEpoch();          // Returns the Hong Kong wall-clock epoch.
 const char *wifiTimeError();
 
 bool wifiTimeLoadPassword(const char *ssid, char *out, size_t outSize);

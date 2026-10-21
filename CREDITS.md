@@ -7,7 +7,7 @@
 - Initial development base: the
   [tamapoke-expanded-update](https://github.com/ShadowEnemyx/TamaPoke/tree/tamapoke-expanded-update)
   branch maintained by ShadowEnemyx.
-- Korean edition, current firmware features, UI, power management,
+- Hong Kong Traditional Chinese edition, current firmware features, UI, power management,
   communication, minigames and Windows flasher: ccs21.
 
 The original copyright and MIT notice are retained in `LICENSE`.
@@ -31,7 +31,7 @@ implied.
 ## Data, font and libraries
 
 - Species and move reference data: [PokéAPI](https://pokeapi.co)
-- Korean bitmap font source: Noto Sans KR, SIL Open Font License 1.1
+- Traditional Chinese bitmap font source: Noto Sans CJK HK, SIL Open Font License 1.1
 - Arduino GFX Library: moononournation and upstream contributors
 - SensorLib and XPowersLib: Lewis He / lewisxhe
 - Arduino ESP32 Core and ESP-IDF components: Espressif Systems
