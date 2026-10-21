@@ -1,9 +1,14 @@
 'use strict';
+import { openZip } from './zip.js';
 const el = id => document.getElementById(id);
 const enc = new TextEncoder();
 const regionNames = {kanto:'關都',johto:'城都',hoenn:'豐緣',sinnoh:'神奧',unova:'合眾',kalos:'卡洛斯',alola:'阿羅拉',galar:'伽勒爾',paldea:'帕底亞'};
 regionNames.forms='形態變化';
 let port, reader, writer, pendingRead, decoder = new TextDecoder(), lineBuf = '', busy = false, firmwareReady = false;
+let usingLocal = false, blobUrls = [];
+const localPak = new Map();
+const VERSION_RE = /^(?:\d+\.\d+\.\d+|zh\.\d+\.\d+\.\d+[a-z]?|\d+\.\d+-zh\.\d+)$/;
+const EXPECTED_PARTS = [['firmware/bootloader.bin',0],['firmware/partitions.bin',32768],['firmware/boot_app0.bin',57344],['firmware/app.bin',65536]];
 const regionButtons = [...document.querySelectorAll('[data-region]')];
 function log(message) { el('log').style.display='block'; el('log').textContent=(el('log').textContent+message+'\n').split('\n').slice(-301).join('\n'); el('log').scrollTop=el('log').scrollHeight; }
 function status(message) { el('status').textContent=message; }
@@ -13,6 +18,8 @@ function controls() {
   el('disconnect').disabled=!port || busy;
   el('all').disabled=!ready;
   el('files').disabled=!ready;
+  el('package').disabled=busy;
+  el('folder').disabled=busy;
   el('firmware').disabled=!firmwareReady || !!port || busy;
   for(const button of regionButtons) button.disabled=!ready || button.dataset.missing==='true';
 }
@@ -129,14 +136,120 @@ async function runInstall(action) {
   catch(e) { status(`安裝已中止。${e.message.split('\n')[0]}`);log(e.message);log('不會自動重送。請保留錯誤內容並重新連接，切勿格式化 SD 卡或刪除存檔。');await disconnect(); }
   finally { busy=false;controls(); }
 }
+function sibling(manifestName, rel) {
+  const slash = manifestName.lastIndexOf('/');
+  return (slash >= 0 ? manifestName.slice(0, slash + 1) : '') + rel;
+}
+function pickManifest(names) {
+  const hits = names.filter(name => name === 'manifest.json' || name.endsWith('/manifest.json'));
+  if (hits.length === 1) return hits[0];
+  if (!hits.length) throw new Error('這個套件沒有 manifest.json。請選擇 TamaPoke-Web-Installer zip，或解壓後含有 manifest.json 的資料夾。');
+  throw new Error('找到多於一個 manifest.json。請只選擇最新的資料夾，不要選包含舊檔的上層資料夾。');
+}
+function assertManifest(m, info) {
+  if (!VERSION_RE.test(m.version) || info.version !== m.version || m.new_install_prompt_erase !== true) {
+    throw new Error('這份套件的版本資料不完整，已停止安裝。');
+  }
+  const parts = m.builds?.[0]?.parts;
+  if (!parts || parts.length !== 4 || parts.some((part, i) => part.path !== EXPECTED_PARTS[i][0] || part.offset !== EXPECTED_PARTS[i][1])) {
+    throw new Error('這份套件的韌體配置不正確，已停止安裝。');
+  }
+}
+async function sha256(buffer) {
+  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', buffer));
+  let hex = '';
+  for (const b of bytes) hex += b.toString(16).padStart(2, '0');
+  return hex;
+}
+function openFileList(files) {
+  const list = [...files];
+  const names = list.map(file => (file.webkitRelativePath || file.name).replaceAll('\\', '/'));
+  return {
+    names,
+    size(name) { const i = names.indexOf(name); return i < 0 ? 0 : list[i].size; },
+    async read(name) {
+      const i = names.indexOf(name);
+      if (i < 0) throw new Error(`找不到 ${name}。`);
+      return list[i].arrayBuffer();
+    },
+  };
+}
+async function usePackage(pkg, label) {
+  const manifestName = pickManifest(pkg.names);
+  const manifest = JSON.parse(new TextDecoder().decode(await pkg.read(manifestName)));
+  const info = JSON.parse(new TextDecoder().decode(await pkg.read(sibling(manifestName, 'firmware/build-info.json'))));
+  assertManifest(manifest, info);
+  const created = [];
+  try {
+    const flash = structuredClone(manifest);
+    for (let i = 0; i < EXPECTED_PARTS.length; i++) {
+      const rel = EXPECTED_PARTS[i][0];
+      const data = await pkg.read(sibling(manifestName, rel));
+      const base = rel.slice(rel.lastIndexOf('/') + 1);
+      const meta = info.files?.[base];
+      if (!meta || data.byteLength !== meta.size || (meta.sha256 && await sha256(data) !== meta.sha256)) {
+        throw new Error(`${base} 和版本資料不符，已停止安裝。`);
+      }
+      const url = URL.createObjectURL(new Blob([data], {type: 'application/octet-stream'}));
+      created.push(url);
+      flash.builds[0].parts[i].path = url;
+    }
+    const manifestUrl = URL.createObjectURL(new Blob([JSON.stringify(flash)], {type: 'application/json'}));
+    created.push(manifestUrl);
+    for (const old of blobUrls) URL.revokeObjectURL(old);
+    blobUrls = created;
+    document.querySelector('esp-web-install-button').setAttribute('manifest', manifestUrl);
+    localPak.clear();
+    for (const button of regionButtons) {
+      const region = button.dataset.region;
+      const rel = region === 'forms' ? 'forms.pak' : `sprites-${region}.pak`;
+      const full = sibling(manifestName, rel);
+      if (!pkg.names.includes(full)) {
+        button.dataset.missing = 'true';
+        button.textContent = `${regionNames[region]} · 套件裡沒有`;
+        continue;
+      }
+      button.dataset.missing = 'false';
+      const bytes = pkg.size(full);
+      button.textContent = `${regionNames[region]} · ${(bytes / 1e6).toFixed(1)}MB`;
+      localPak.set(region, () => pkg.read(full));
+    }
+    usingLocal = true;
+    firmwareReady = true;
+    el('version').textContent = 'v' + manifest.version;
+    el('package-name').textContent = `將燒錄：${label}（${manifestName}）`;
+    status('已改用你選擇的套件。安裝韌體後，連接裝置即可把精靈圖寫進 microSD。');
+    log(`已載入 ${label}：${manifestName}`);
+    controls();
+  } catch (error) {
+    for (const url of created) URL.revokeObjectURL(url);
+    throw error;
+  }
+}
+async function loadPicked(action) {
+  if (busy) return;
+  busy = true; controls();
+  try { await action(); }
+  catch (error) { status(error.message); log(error.message); }
+  finally { busy = false; controls(); }
+}
 async function loadRegion(region) {
   const name=regionNames[region];if(!name) throw new Error('未知地區。');
-  status(`正在下載${name}精靈圖…`);
-  // Bundles stay on the same origin. GitHub release downloads do not provide
-  // the CORS headers needed by the browser, so there is no unreliable fallback.
-  const resp=await fetch(region==='forms'?'forms.pak':`sprites-${region}.pak`);
-  if(!resp.ok) throw new Error(`無法下載${name}包。（HTTP ${resp.status}）`);
-  await sendAll(parsePak(await resp.arrayBuffer()),name);
+  let buf;
+  if (usingLocal) {
+    const read = localPak.get(region);
+    if (!read) throw new Error(`這個套件沒有${name}精靈圖。`);
+    status(`正在從本地套件讀取${name}…`);
+    buf = await read();
+  } else {
+    status(`正在下載${name}精靈圖…`);
+    // Bundles stay on the same origin. GitHub release downloads do not provide
+    // the CORS headers needed by the browser, so there is no unreliable fallback.
+    const resp=await fetch(region==='forms'?'forms.pak':`sprites-${region}.pak`, {cache:'no-store'});
+    if(!resp.ok) throw new Error(`無法下載${name}包。（HTTP ${resp.status}）`);
+    buf = await resp.arrayBuffer();
+  }
+  await sendAll(parsePak(buf),name);
 }
 el('connect').onclick=async()=>{
   if(port||busy) return;
@@ -151,6 +264,19 @@ el('connect').onclick=async()=>{
 el('disconnect').onclick=async()=>{await disconnect();status('已中斷連接。請重新啟動裝置。');};
 for(const button of regionButtons) button.onclick=()=>runInstall(()=>loadRegion(button.dataset.region));
 el('all').onclick=()=>runInstall(async()=>{for(const b of regionButtons) {if(b.dataset.missing==='true') throw new Error(`找不到${regionNames[b.dataset.region]}包。`);await loadRegion(b.dataset.region);}});
+el('package').onchange=event=>{
+  const file=event.target.files?.[0];
+  event.target.value='';
+  if(!file) return;
+  loadPicked(async()=>{ status('正在讀取壓縮檔…'); await usePackage(openZip(await file.arrayBuffer()), file.name); });
+};
+el('folder').onchange=event=>{
+  const files=[...event.target.files];
+  event.target.value='';
+  if(!files.length) return;
+  const label=(files[0].webkitRelativePath||files[0].name).split(/[\\/]/)[0]||'資料夾';
+  loadPicked(()=>usePackage(openFileList(files), label));
+};
 el('files').onchange=event=>runInstall(async()=>{
   const items=[];for(const f of event.target.files) items.push({name:'mons/'+f.name,data:new Uint8Array(await f.arrayBuffer())});
   if(!items.length) throw new Error('請選擇檔案。');await sendAll(items,'自選檔案');
@@ -158,11 +284,9 @@ el('files').onchange=event=>runInstall(async()=>{
 if(!('serial' in navigator)||!isSecureContext) el('unsupported').style.display='block';
 if('serial' in navigator) navigator.serial.addEventListener('disconnect',async()=>{await disconnect();status('USB 連線已中斷，請重新連接。');});
 controls();
-Promise.all(['manifest.json','firmware/build-info.json'].map(url=>fetch(url).then(r=>{if(!r.ok)throw Error();return r.json();})))
+Promise.all(['manifest.json','firmware/build-info.json'].map(url=>fetch(url,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error();return r.json();})))
   .then(([m,info])=>{
-    if(!/^(?:\d+\.\d+\.\d+|zh\.\d+\.\d+\.\d+[a-z]?|\d+\.\d+-zh\.\d+)$/.test(m.version) || info.version!==m.version || m.new_install_prompt_erase!==true) throw Error();
-    const expected=[['firmware/bootloader.bin',0],['firmware/partitions.bin',32768],['firmware/boot_app0.bin',57344],['firmware/app.bin',65536]];
-    const parts=m.builds?.[0]?.parts;
-    if(!parts || parts.length!==4 || parts.some((p,i)=>p.path!==expected[i][0]||p.offset!==expected[i][1])) throw Error();
+    if(usingLocal) return;
+    assertManifest(m, info);
     el('version').textContent='v'+m.version;firmwareReady=true;controls();
-  }).catch(()=>{el('version').textContent='需要確認版本';status('沒有經驗證的韌體資訊，無法啟用安裝。');controls();});
+  }).catch(()=>{ if(usingLocal) return; el('version').textContent='需要確認版本';status('網頁上沒有可用的韌體。請選擇電腦上已下載的 zip，或解壓後的資料夾。');controls(); });
