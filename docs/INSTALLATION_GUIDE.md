@@ -26,10 +26,9 @@ Web Serial 需要安全連線和瀏覽器支援。Safari、Firefox 和手機瀏�
 
 1. 維護者執行 `Build-Public.ps1`，把產生的 `TamaPoke-Web-Installer-v*.zip` 一併上傳到 GitHub Release。
 2. 在儲存庫 Settings → Pages 將來源設為 **GitHub Actions**（只需設定一次）。
-3. 發布 Release 後，`Deploy Web Installer` workflow 會把 ZIP 內容部署到 Pages。
+3. 開啟 Actions → **Deploy Web Installer** → **Run workflow**：分支選 **main**，並填入 Release 標籤（例如 `webinstaller`）。  
+   此儲存庫的 `github-pages` 環境只允許 `main` 部署；從 tag 觸發會出現 “Tag … is not allowed to deploy to github-pages”。
 4. 使用者用桌面 Chrome／Edge 開啟 Pages 網址，喚醒裝置並以 USB-C 連接，按「連接裝置並安裝」。
-
-亦可在 Actions 手動執行該 workflow，並指定已含 Web Installer ZIP 的 Release 標籤。
 
 ### 方式 B：自行託管 ZIP
 

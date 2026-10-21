@@ -1,19 +1,21 @@
 name: Deploy Web Installer
 
-# Deploys the browser installer package from a published GitHub Release to
-# GitHub Pages (Settings → Pages → Source = GitHub Actions).
+# Deploys the browser installer package from a GitHub Release zip to GitHub Pages.
 #
-# Expected release asset name: TamaPoke-Web-Installer-v*.zip
-# produced by Build-Public.ps1.
+# The repo github-pages environment is limited to branch "main", so this workflow
+# must run from main (workflow_dispatch). Do not rely on release/tag refs — tags
+# such as "webinstaller" are blocked by that environment protection rule.
+#
+# Expected release asset: TamaPoke-Web-Installer-v*.zip from Build-Public.ps1.
+#
+# Run: Actions → Deploy Web Installer → Run workflow → branch main → tag e.g. webinstaller
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag that contains TamaPoke-Web-Installer-v*.zip
-        required: false
+        description: Release tag that contains TamaPoke-Web-Installer-v*.zip (e.g. webinstaller)
+        required: true
         type: string
 
 permissions:
@@ -34,20 +36,11 @@ jobs:
     steps:
       - name: Resolve release tag
         id: tag
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "release" ]; then
-            TAG="${{ github.event.release.tag_name }}"
-          elif [ -n "${{ inputs.tag }}" ]; then
-            TAG="${{ inputs.tag }}"
-          else
-            TAG="$(gh release list -R "${{ github.repository }}" --limit 20 --json tagName,isDraft,isPrerelease \
-              --jq '[.[] | select(.isDraft==false)][0].tagName')"
-          fi
-          if [ -z "${TAG}" ] || [ "${TAG}" = "null" ]; then
-            echo "No published release found."
+          TAG="${{ inputs.tag }}"
+          if [ -z "${TAG}" ]; then
+            echo "Release tag input is required."
             exit 1
           fi
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
