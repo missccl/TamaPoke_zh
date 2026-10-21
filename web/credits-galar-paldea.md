@@ -198,7 +198,7 @@ TamaPoke 精靈圖包中伽勒爾和帕底亞部分所用 PMDCollab SpriteCollab
 | [996](https://github.com/PMDCollab/SpriteCollab/tree/master/sprite/0996) | 涼脊龍 | Soulja, pi3.14, Inv3rse · CC_BY-NC_4 | Emmuffin · CC_BY-NC_4 |
 | [997](https://github.com/PMDCollab/SpriteCollab/tree/master/sprite/0997) | 凍脊龍 | Soulja, pi3.14 · CC_BY-NC_4 | Emmuffin · CC_BY-NC_4 |
 | [998](https://github.com/PMDCollab/SpriteCollab/tree/master/sprite/0998) | 戟脊龍 | Soulja, pi3.14 · CC_BY-NC_4 | G〜 · CC_BY-NC_4 |
-| [999](https://github.com/PMDCollab/SpriteCollab/tree/master/sprite/0999/0001) | 索財靈（Roaming 形態代替）（Roaming 形態代替） | G〜 · PMDCollab_2 | G〜 · PMDCollab_2 |
+| [999](https://github.com/PMDCollab/SpriteCollab/tree/master/sprite/0999/0001) | 索財靈（Roaming 形態代替） | G〜 · PMDCollab_2 | G〜 · PMDCollab_2 |
 | [1000](https://github.com/PMDCollab/SpriteCollab/tree/master/sprite/1000) | 賽富豪 | baronessfaron, G〜 · PMDCollab_2 | Deeshura · PMDCollab_2 |
 | [1001](https://github.com/PMDCollab/SpriteCollab/tree/master/sprite/1001) | 古簡蝸 | 未包含（沒有資料） | 以一般版代替 |
 | [1002](https://github.com/PMDCollab/SpriteCollab/tree/master/sprite/1002) | 古劍豹 | 未包含（沒有資料） | 以一般版代替 |
