@@ -37,20 +37,35 @@ function Reset-ChildDirectory([string]$Path, [string]$Parent) {
     New-Item -ItemType Directory -Force -Path $safe | Out-Null
 }
 
-function Find-Tool([string]$Name, [string]$SearchRoot) {
+function Find-Tool([string]$Name, [string]$SearchRoot, [string]$Hint = '') {
     $command = Get-Command $Name -ErrorAction SilentlyContinue
     if ($command) { return $command.Source }
-    $found = Get-ChildItem -LiteralPath $SearchRoot -Recurse -Filter "$Name.exe" -ErrorAction SilentlyContinue |
-        Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
-    if (-not $found) { throw "$Name was not found." }
-    return $found
+    if (Test-Path -LiteralPath $SearchRoot) {
+        $found = Get-ChildItem -LiteralPath $SearchRoot -Recurse -Filter "$Name.exe" -ErrorAction SilentlyContinue |
+            Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+        if ($found) { return $found }
+    }
+    if ($Hint) { throw "$Name was not found. $Hint" }
+    throw "$Name was not found."
 }
 
 if (-not (Test-Path -LiteralPath $firmware)) { throw "Firmware source is missing: $firmware" }
 New-Item -ItemType Directory -Force -Path $cache,$release,$payload | Out-Null
 
 $arduinoRoot = Join-Path $env:LOCALAPPDATA 'Arduino15\packages\esp32'
-$arduino = Find-Tool 'arduino-cli' (Join-Path $env:LOCALAPPDATA 'Arduino15')
+$arduinoHint = @"
+Install Arduino CLI, put it on PATH, then install the ESP32 core and libraries:
+
+  winget install ArduinoSA.CLI
+  arduino-cli config init
+  arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+  arduino-cli core install esp32:esp32@3.3.11 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+  arduino-cli lib install "GFX Library for Arduino@1.6.7" "SensorLib@0.4.1" "XPowersLib@0.3.3"
+
+Also install the .NET 10 SDK before building the Windows flasher.
+Close and reopen PowerShell after winget install so PATH updates.
+"@
+$arduino = Find-Tool 'arduino-cli' (Join-Path $env:LOCALAPPDATA 'Arduino15') $arduinoHint
 if (-not $SkipFirmware) {
     Reset-ChildDirectory $payload $flasher
 

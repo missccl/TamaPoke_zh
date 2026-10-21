@@ -55,7 +55,21 @@ Windows 安裝程式會從 [PMDCollab/SpriteCollab](https://github.com/PMDCollab
 
 ## 開發者建置
 
-需要 Arduino CLI、ESP32 Arduino Core 3.3.11、.NET 10 SDK、GFX Library for Arduino 1.6.7、SensorLib 0.4.1 及 XPowersLib 0.3.3。於 PowerShell 執行：
+需要 Arduino CLI、ESP32 Arduino Core 3.3.11、.NET 10 SDK、GFX Library for Arduino 1.6.7、SensorLib 0.4.1 及 XPowersLib 0.3.3。
+
+首次在 Windows 準備工具（PowerShell）：
+
+```powershell
+winget install ArduinoSA.CLI
+winget install Microsoft.DotNet.SDK.10
+# 關閉並重新開啟 PowerShell，讓 PATH 生效
+arduino-cli config init
+arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+arduino-cli core install esp32:esp32@3.3.11 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+arduino-cli lib install "GFX Library for Arduino@1.6.7" "SensorLib@0.4.1" "XPowersLib@0.3.3"
+```
+
+然後在儲存庫根目錄執行：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Build-Public.ps1
