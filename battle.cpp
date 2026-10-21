@@ -1,0 +1,338 @@
+#include "battle.h"
+#include "dex.h"
+#include "types.h"
+#include "form_moves.h"
+
+// ---------- building a combatant ----------
+
+static void fill(Combatant &c, int16_t dex, uint8_t lvl, uint16_t hp,
+                 uint16_t a, uint16_t d, uint16_t sa, uint16_t sd, uint16_t sp) {
+  c = Combatant();
+  c.dex = dex;
+  c.level = lvl;
+  c.maxHp = hp ? hp : 1;
+  c.hp = c.maxHp;
+  c.base[SI_ATK] = a; c.base[SI_DEF] = d;
+  c.base[SI_SPA] = sa; c.base[SI_SPD] = sd; c.base[SI_SPE] = sp;
+}
+
+void combatantFromPet(Combatant &c, const Pet &p) {
+  fill(c, p.speciesId, p.level(), p.vitStat(), p.atkStat(), p.defStat(),
+       p.spaStat(), p.spdStat(), p.speStat());
+  for (int i = 0; i < MOVE_SLOTS; i++) c.moves[i] = formMoveUsable(p.speciesId,p.form,p.moves[i])?p.moves[i]:MV_STRUGGLE;
+  c.shiny = p.shiny;
+  c.form = p.form;
+  const char *nm = p.nick[0] ? p.nick : DEX_TBL[p.speciesId].name;
+  snprintf(c.name, sizeof(c.name), "%s", nm);
+}
+
+void combatantFromParty(Combatant &c, const PartyMon &m) {
+  fill(c, m.dex, (uint8_t)m.level, party.vitOf(m), party.atkOf(m), party.defOf(m),
+       party.spaOf(m), party.spdOf(m), party.speOf(m));
+  for (int i = 0; i < MOVE_SLOTS; i++) c.moves[i] = formMoveUsable(m.dex,m.form,m.moves[i])?m.moves[i]:MV_STRUGGLE;
+  c.shiny = m.shiny != 0;
+  c.form = m.form;
+  const char *nm = m.nick[0] ? m.nick : DEX_TBL[m.dex].name;
+  snprintf(c.name, sizeof(c.name), "%s", nm);
+}
+
+// ---------- stat stages ----------
+
+// The series' own table, as a fraction so it stays integer: +1 is 3/2, -1 is
+// 2/3, and so on out to +6 = 4x and -6 = 1/4.
+uint16_t stagedStat(uint16_t base, int8_t stage) {
+  if (stage > 6) stage = 6;
+  if (stage < -6) stage = -6;
+  uint16_t num = 2 + (stage > 0 ? stage : 0);
+  uint16_t den = 2 + (stage < 0 ? -stage : 0);
+  uint32_t v = (uint32_t)base * num / den;
+  return v < 1 ? 1 : (v > 65535 ? 65535 : (uint16_t)v);
+}
+
+static uint16_t effStat(const Combatant &c, uint8_t idx) {
+  uint16_t v = stagedStat(c.base[idx], c.stage[idx]);
+  // burn halves physical attack, paralysis halves speed -- the two ailments
+  // that do something beyond chip damage
+  if (idx == SI_ATK && c.ailment == AIL_BURN) v = v / 2 ? v / 2 : 1;
+  if (idx == SI_SPE && c.ailment == AIL_PARA) v = v / 2 ? v / 2 : 1;
+  return v;
+}
+
+// ---------- damage ----------
+static bool battleHasType(const Combatant &c, uint8_t type) {
+  if(c.npcType1<TYPE_COUNT) return c.npcType1==type || c.npcType2==type;
+  return hasStab(c.dex,type,c.form);
+}
+static uint16_t battleTypeEff(uint8_t type,const Combatant &c) {
+  if(c.npcType1<TYPE_COUNT) return typeEffPct(type,c.npcType1,c.npcType2);
+  return typeEffVsDex(type,c.dex,c.form);
+}
+uint8_t formMoveType(int16_t dex, FormId form, MoveId move) {
+  if(move>=MOVE_COUNT) return T_NORMAL;
+  const auto *f=formFind(dex,form);
+  if(!f) return MOVE_TBL[move].type;
+  if((dex==493 && move==MV_JUDGMENT) || (dex==773 && move==MV_MULTI_ATTACK) ||
+     (dex==351 && move==MV_WEATHER_BALL)) return f->type1;
+  if(dex==1017 && move==MV_IVY_CUDGEL) return f->type2<TYPE_COUNT?f->type2:T_GRASS;
+  if(dex==877 && move==MV_AURA_WHEEL) return T_DARK;
+  if(dex==649 && move==MV_TECHNO_BLAST) {
+    if(strstr(f->key,"douse")) return T_WATER;
+    if(strstr(f->key,"shock")) return T_ELECTRIC;
+    if(strstr(f->key,"burn")) return T_FIRE;
+    if(strstr(f->key,"chill")) return T_ICE;
+  }
+  return MOVE_TBL[move].type;
+}
+
+// roll is 217..255, the series' damage spread, passed in so tests can pin it.
+uint16_t battleDamage(const Combatant &atk, const Combatant &def, MoveId mv,
+                      bool crit, uint8_t roll) {
+  if (!mv || mv >= MOVE_COUNT) return 0;
+  MoveEntry m = MOVE_TBL[mv];
+  m.type = formMoveType(atk.dex,atk.form,mv);
+  if (m.cat == MC_STATUS) return 0;
+
+  if (m.effect == EF_FIXED_LVL) return atk.level ? atk.level : 1;
+  if (m.effect == EF_FIXED) return m.param > 0 ? (uint16_t)m.param : 1;
+
+  uint16_t A = (m.cat == MC_PHYS) ? effStat(atk, SI_ATK) : effStat(atk, SI_SPA);
+  uint16_t D = (m.cat == MC_PHYS) ? effStat(def, SI_DEF) : effStat(def, SI_SPD);
+  if(mv==MV_SHELL_SIDE_ARM && (uint32_t)effStat(atk,SI_ATK)*effStat(def,SI_SPD) >
+       (uint32_t)effStat(atk,SI_SPA)*effStat(def,SI_DEF)) {
+    m.cat=MC_PHYS;A=effStat(atk,SI_ATK);D=effStat(def,SI_DEF);
+  }
+  // A critical hit ignores the defender's positive stages and the attacker's
+  // negative ones, so a Barrier cannot make you immune to a lucky roll.
+  if (crit) {
+    A = (m.cat == MC_PHYS) ? atk.base[SI_ATK] : atk.base[SI_SPA];
+    D = (m.cat == MC_PHYS) ? def.base[SI_DEF] : def.base[SI_SPD];
+  }
+  if (!D) D = 1;
+
+  uint32_t dmg = (2UL * atk.level / 5 + 2) * m.power * A / D / 50 + 2;
+  if (crit) dmg *= 2;
+  if (battleHasType(atk, m.type)) dmg = dmg * 3 / 2;
+  uint16_t eff = battleTypeEff(m.type, def);
+  dmg = dmg * eff / 100;
+  if (eff == 0) return 0;               // immune: no chip, no minimum
+  dmg = dmg * roll / 255;
+  return dmg < 1 ? 1 : (dmg > 65535 ? 65535 : (uint16_t)dmg);
+}
+
+// ---------- turn order ----------
+
+bool battleMovesFirst(const Combatant &a, MoveId ma,
+                      const Combatant &b, MoveId mb) {
+  int pa = (ma && ma < MOVE_COUNT && MOVE_TBL[ma].effect == EF_PRIORITY)
+               ? MOVE_TBL[ma].param : 0;
+  int pb = (mb && mb < MOVE_COUNT && MOVE_TBL[mb].effect == EF_PRIORITY)
+               ? MOVE_TBL[mb].param : 0;
+  if (pa != pb) return pa > pb;
+  uint16_t sa = effStat(a, SI_SPE), sb = effStat(b, SI_SPE);
+  if (sa != sb) return sa > sb;
+  return random(2) == 0;               // a genuine speed tie is a coin flip
+}
+
+// ---------- one action ----------
+
+static void applyStages(Combatant &c, uint8_t mask, int8_t delta) {
+  static const uint8_t BIT[SI_COUNT] = { ST_ATK, ST_DEF, ST_SPA, ST_SPD, ST_SPE };
+  for (int i = 0; i < SI_COUNT; i++) {
+    if (!(mask & BIT[i])) continue;
+    int v = c.stage[i] + delta;
+    c.stage[i] = v > 6 ? 6 : (v < -6 ? -6 : (int8_t)v);
+  }
+}
+
+static void hurt(Combatant &c, uint16_t amount) {
+  c.hp = (amount >= c.hp) ? 0 : c.hp - amount;
+}
+
+static void heal(Combatant &c, uint16_t amount) {
+  uint32_t v = (uint32_t)c.hp + amount;
+  c.hp = v > c.maxHp ? c.maxHp : (uint16_t)v;
+}
+
+static void tryInflict(Combatant &def, const MoveEntry &m, TurnLog &log) {
+  if (m.ailment == AIL_NONE || !m.ailChance || def.fainted() ||
+      random(100) >= m.ailChance) return;
+  if (m.ailment == AIL_CONFUSE) {
+    if (!def.confuseTurns) {
+      def.confuseTurns = 2 + random(3);
+      log.inflicted = AIL_CONFUSE;
+    }
+    return;
+  }
+  if (def.ailment != AIL_NONE) return;
+  // A type cannot be given the status it is made of.
+  bool immune = (m.ailment == AIL_BURN && battleHasType(def, T_FIRE)) ||
+                (m.ailment == AIL_FREEZE && battleHasType(def, T_ICE)) ||
+                (m.ailment == AIL_POISON && (battleHasType(def, T_POISON) || battleHasType(def, T_STEEL))) ||
+                (m.ailment == AIL_PARA && battleHasType(def, T_ELECTRIC));
+  if (immune) return;
+  def.ailment = m.ailment;
+  if (m.ailment == AIL_SLEEP) def.ailTurns = 2 + random(3);
+  log.inflicted = m.ailment;
+}
+
+void battleAct(Combatant &atk, Combatant &def, MoveId mv, TurnLog &log) {
+  log = TurnLog();
+  log.move = mv;
+  if (atk.fainted() || def.fainted()) { log.skipped = true; return; }
+
+  // --- things that can cost the turn before a move is even chosen
+  if (atk.recharge) { atk.recharge = false; log.skipped = true; return; }
+  if (atk.ailment == AIL_FREEZE) {
+    if (random(100) < 20) atk.ailment = AIL_NONE;   // thaws
+    else { log.skipped = true; return; }
+  }
+  if (atk.ailment == AIL_SLEEP) {
+    if (atk.ailTurns) atk.ailTurns--;
+    if (atk.ailTurns == 0) atk.ailment = AIL_NONE;
+    else { log.skipped = true; return; }
+  }
+  if (atk.ailment == AIL_PARA && random(100) < 25) { log.skipped = true; return; }
+  if (atk.confuseTurns) {
+    atk.confuseTurns--;
+    if (random(100) < 33) {               // hits itself instead
+      uint16_t self = (2UL * atk.level / 5 + 2) * 40 *
+                          atk.base[SI_ATK] / (atk.base[SI_DEF] ? atk.base[SI_DEF] : 1) / 50 + 2;
+      hurt(atk, self);
+      log.hurtSelf = true;
+      log.damage = self;
+      return;
+    }
+  }
+
+  // a wound-up EF_CHARGE move fires this turn instead of whatever was picked
+  if (atk.charging) { mv = atk.charging; atk.charging = 0; }
+  else if (mv && mv < MOVE_COUNT && MOVE_TBL[mv].effect == EF_CHARGE) {
+    atk.charging = mv;
+    log.charged = true;
+    return;
+  }
+
+  if (!mv || mv >= MOVE_COUNT) { log.skipped = true; return; }
+  MoveEntry m = MOVE_TBL[mv];
+  m.type = formMoveType(atk.dex,atk.form,mv);
+  log.move = mv;
+
+  // --- accuracy. acc 0 means it cannot miss (SWIFT, and every status move)
+  if (m.acc && m.effect != EF_NEVER_MISS && random(100) >= m.acc) {
+    log.missed = true;
+    return;
+  }
+
+  if (m.cat == MC_STATUS) {
+    if (m.effect == EF_HEAL) {
+      heal(atk, (uint32_t)atk.maxHp * (m.param > 0 ? m.param : 50) / 100);
+      log.healed = true;
+    } else if (m.effect == EF_STAGE) {
+      Combatant &t = (m.target == TG_SELF) ? atk : def;
+      applyStages(t, m.statMask, m.stages);
+      log.stageMask = m.statMask;
+      log.stageDelta = m.stages;
+    }
+    tryInflict(def, m, log);
+    return;
+  }
+
+  // --- damage, including multi-hit
+  uint8_t hits = mv==MV_SURGING_STRIKES?3:(m.effect == EF_MULTI) ? (uint8_t)(2 + random(4)) : 1;
+  uint16_t total = 0;
+  log.effPct = battleTypeEff(m.type, def);
+  if (log.effPct == 0) { log.immune = true; return; }
+  for (uint8_t h = 0; h < hits; h++) {
+    bool crit = m.effect == EF_ALWAYS_CRIT || random(16) == 0;
+    uint16_t d = battleDamage(atk, def, mv, crit, (uint8_t)(217 + random(39)));
+    total += d;
+    if (crit) log.crit = true;
+    hurt(def, d);
+    if (def.fainted()) { hits = h + 1; break; }
+  }
+  log.hits = hits;
+  log.damage = total;
+
+  if (m.effect == EF_RECOIL && m.param > 0) hurt(atk, total / m.param ? total / m.param : 1);
+  if (m.effect == EF_DRAIN && m.param > 0) heal(atk, total * m.param / 100);
+  if (m.effect == EF_RECHARGE) atk.recharge = true;
+  if (m.effect == EF_STAGE) {
+    Combatant &t = (m.target == TG_SELF) ? atk : def;
+    applyStages(t, m.statMask, m.stages);
+    log.stageMask = m.statMask;
+    log.stageDelta = m.stages;
+  }
+
+  // Secondary ailments and status-only ailments share the same validation.
+  tryInflict(def, m, log);
+  log.targetFainted = def.fainted();
+}
+
+// ---------- end of turn ----------
+
+void battleEndTurn(Combatant &c, TurnLog &log) {
+  log = TurnLog();
+  if (c.fainted()) return;
+  if (c.ailment == AIL_BURN || c.ailment == AIL_POISON) {
+    uint16_t chip = c.maxHp / 16;
+    if (!chip) chip = 1;
+    hurt(c, chip);
+    log.damage = chip;
+    log.inflicted = c.ailment;
+    log.targetFainted = c.fainted();
+  }
+}
+
+// ---------- move choice ----------
+
+MoveId aiChooseMove(const Combatant &self, const Combatant &foe, bool smart) {
+  MoveId legal[MOVE_SLOTS];
+  uint8_t n = 0;
+  for (int i = 0; i < MOVE_SLOTS; i++)
+    if (self.moves[i] && self.moves[i] < MOVE_COUNT) legal[n++] = self.moves[i];
+  if (!n) return 0;
+  if (!smart) return legal[random(n)];
+
+  int16_t bestScore = -32768;
+  MoveId best = legal[0];
+  for (uint8_t i = 0; i < n; i++) {
+    MoveId mv = legal[i];
+    const MoveEntry &m = MOVE_TBL[mv];
+    int32_t sc;
+    if (m.cat == MC_STATUS) {
+      // A status move costs a whole turn, so it has to buy more than chip
+      // damage would. Healing is worth it only when actually hurt; a boost is
+      // worth it early and worthless once the stage is already stacked.
+      if (m.effect == EF_HEAL) {
+        int missing = (int)self.maxHp - self.hp;
+        sc = (missing * 100 / (self.maxHp ? self.maxHp : 1)) - 30;
+      } else if (m.effect == EF_STAGE) {
+        static const uint8_t BIT[SI_COUNT] = { ST_ATK, ST_DEF, ST_SPA, ST_SPD, ST_SPE };
+        int stacked = 0, hit = 0;
+        const Combatant &t = (m.target == TG_SELF) ? self : foe;
+        for (int k = 0; k < SI_COUNT; k++)
+          if (m.statMask & BIT[k]) { stacked += t.stage[k] * (m.stages > 0 ? 1 : -1); hit++; }
+        if (!hit) hit = 1;
+        // diminishing: +2 ATK is strong at stage 0, pointless at +6
+        sc = 26 - (stacked * 12 / hit);
+        // and never set up when one more hit would finish you
+        if (self.hp * 3 < self.maxHp) sc -= 40;
+      } else {
+        sc = 5;
+      }
+    } else {
+      uint16_t dmg = battleDamage(self, foe, mv, false, 236);  // average roll
+      sc = dmg;
+      if (dmg >= foe.hp) sc += 1000;              // a kill this turn beats all
+      uint8_t acc = m.acc ? m.acc : 100;
+      sc = sc * acc / 100;                        // discount what tends to miss
+      if (m.effect == EF_RECHARGE) sc -= dmg / 4; // a free turn for the foe
+      if (m.effect == EF_RECOIL) sc -= dmg / 6;
+      if (m.effect == EF_CHARGE) sc -= dmg / 3;   // a turn spent winding up
+      if (m.ailment != AIL_NONE && foe.ailment == AIL_NONE)
+        sc += m.ailChance / 4;
+    }
+    if (sc > bestScore) { bestScore = (int16_t)sc; best = mv; }
+  }
+  return best;
+}

@@ -1,0 +1,56 @@
+[
+  {
+    "id": "kanto",
+    "name": "關都",
+    "path": "sprites-kanto.pak",
+    "bytes": 42653600
+  },
+  {
+    "id": "johto",
+    "name": "城都",
+    "path": "sprites-johto.pak",
+    "bytes": 29202673
+  },
+  {
+    "id": "hoenn",
+    "name": "豐緣",
+    "path": "sprites-hoenn.pak",
+    "bytes": 40704276
+  },
+  {
+    "id": "sinnoh",
+    "name": "神奧",
+    "path": "sprites-sinnoh.pak",
+    "bytes": 35132936
+  },
+  {
+    "id": "unova",
+    "name": "合眾",
+    "path": "sprites-unova.pak",
+    "bytes": 42264050
+  },
+  {
+    "id": "kalos",
+    "name": "卡洛斯",
+    "path": "sprites-kalos.pak",
+    "bytes": 22328341
+  },
+  {
+    "id": "alola",
+    "name": "阿羅拉",
+    "path": "sprites-alola.pak",
+    "bytes": 29470471
+  },
+  {
+    "id": "galar",
+    "name": "伽勒爾",
+    "path": "sprites-galar.pak",
+    "bytes": 26921043
+  },
+  {
+    "id": "paldea",
+    "name": "帕底亞",
+    "path": "sprites-paldea.pak",
+    "bytes": 31135570
+  }
+]
