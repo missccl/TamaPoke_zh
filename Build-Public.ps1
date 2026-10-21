@@ -69,28 +69,40 @@ $arduino = Find-Tool 'arduino-cli' (Join-Path $env:LOCALAPPDATA 'Arduino15') $ar
 if (-not $SkipFirmware) {
     Reset-ChildDirectory $payload $flasher
 
+    # WorkDir avoids dots in folder names (stage-1.75C confused some Windows
+    # arduino-cli runs with "main file missing"). Label stays 1.75 / 1.75C for
+    # payload names expected by the flasher.
     $targets = @(
-        [pscustomobject]@{ Label='1.75'; Is175C=0; FlashMenu='16M'; Partition='partitions_175.csv' },
-        [pscustomobject]@{ Label='1.75C'; Is175C=1; FlashMenu='32M'; Partition='partitions_175c.csv' }
+        [pscustomobject]@{ Label='1.75'; WorkDir='175'; Is175C=0; FlashMenu='16M'; Partition='partitions_175.csv' },
+        [pscustomobject]@{ Label='1.75C'; WorkDir='175c'; Is175C=1; FlashMenu='32M'; Partition='partitions_175c.csv' }
     )
     foreach ($target in $targets) {
-        $stageParent = Join-Path $cache "stage-$($target.Label)"
-        $stage = Join-Path $stageParent 'TamaPoke_Final'
-        $build = Join-Path $cache "arduino-$($target.Label)"
+        $stageParent = Join-Path $cache "stage-$($target.WorkDir)"
+        $stage = [IO.Path]::GetFullPath((Join-Path $stageParent 'TamaPoke_Final'))
+        $build = [IO.Path]::GetFullPath((Join-Path $cache "arduino-$($target.WorkDir)"))
         Reset-ChildDirectory $stageParent $cache
         Reset-ChildDirectory $build $cache
         New-Item -ItemType Directory -Force -Path $stage | Out-Null
-        Get-ChildItem -LiteralPath $firmware -File |
-            Where-Object { $_.Extension -in @('.ino','.cpp','.h') } |
-            Copy-Item -Destination $stage
+        $staged = 0
+        Get-ChildItem -LiteralPath $firmware -File | ForEach-Object {
+            if ($_.Extension -in @('.ino', '.cpp', '.h')) {
+                Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $stage $_.Name) -Force
+                $staged++
+            }
+        }
         $generatedStage = Join-Path $stage 'generated'
         New-Item -ItemType Directory -Force -Path $generatedStage | Out-Null
         foreach ($generatedName in @(
             'dex_names_hk.h','help_hk.h','i18n_strings_hk.h',
             'chinese_font_data.h','manual_qr.h')) {
-            Copy-Item -LiteralPath (Join-Path $firmware "generated\$generatedName") -Destination $generatedStage
+            Copy-Item -LiteralPath (Join-Path $firmware "generated\$generatedName") -Destination $generatedStage -Force
         }
-        Copy-Item -LiteralPath (Join-Path $firmware $target.Partition) -Destination (Join-Path $stage 'partitions.csv')
+        Copy-Item -LiteralPath (Join-Path $firmware $target.Partition) -Destination (Join-Path $stage 'partitions.csv') -Force
+        $sketchMain = Join-Path $stage 'TamaPoke_Final.ino'
+        if (-not (Test-Path -LiteralPath $sketchMain)) {
+            throw "Staged sketch is missing $sketchMain (copied $staged source files). Delete the _build folder and retry."
+        }
+        Write-Host "Building $($target.Label) firmware in $stage"
         $fqbn = "esp32:esp32:esp32s3:USBMode=hwcdc,CDCOnBoot=cdc,CPUFreq=240,FlashMode=qio,FlashSize=$($target.FlashMenu),PartitionScheme=custom,PSRAM=opi,EraseFlash=none"
         & $arduino compile --jobs 2 --fqbn $fqbn `
             --build-property "compiler.cpp.extra_flags=-DTAMAPOKE_BOARD_175C=$($target.Is175C)" `
