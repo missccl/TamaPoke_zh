@@ -10,6 +10,8 @@ Release asset `TamaPoke-Web-Installer-v<version>.zip` must contain:
 - `sprites-{kanto,johto,hoenn,sinnoh,unova,kalos,alola,galar,paldea}.pak` and `forms.pak`
   (sizes must match `packs.json`)
 
+The page can also flash a zip already downloaded on the computer. Choose that zip, or only the newest extracted folder. The install button then uses those files instead of an older copy saved on the website. Direct `file://` pages cannot open a serial port; serve `web/` from localhost.
+
 Then run **Actions → Deploy Web Installer** on `main` with the release tag.
 `python tools/check_web.py` checks the page sources; `python tools/check_web.py SITE_DIR`
 also verifies the assembled site.

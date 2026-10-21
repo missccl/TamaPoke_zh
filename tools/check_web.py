@@ -11,9 +11,10 @@ R = Path(__file__).resolve().parents[1]
 W = Path(sys.argv[1]) if len(sys.argv) > 1 else R / 'web'
 full = len(sys.argv) > 1
 html = (W / 'index.html').read_text(encoding='utf-8')
-js = (W / 'installer.js').read_text(encoding='utf-8')
+js = (W / 'installer.js').read_text(encoding='utf-8') + '\n' + (W / 'zip.js').read_text(encoding='utf-8')
 assert '<html lang="zh-HK">' in html and 'TamaPoke 香港繁體中文版' in html
-assert 'Erase device' in html and 'sprites-${region}.pak' in js
+assert 'Erase device' in html and 'sprites-${region}.pak' in js and "from './zip.js'" in js
+assert 'id="package"' in html and 'id="folder"' in html and "cache:'no-store'" in js
 assert not re.search('[\uac00-\ud7a3]', html + js), 'Korean text left in installer'
 for i in ('connect', 'disconnect', 'all', 'files', 'firmware', 'version', 'status', 'progress', 'log', 'unsupported'):
     assert f'id="{i}"' in html, i
