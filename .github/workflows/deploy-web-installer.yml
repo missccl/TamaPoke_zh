@@ -58,7 +58,8 @@ jobs:
             echo "Release ${{ steps.tag.outputs.tag }} has no TamaPoke-Web-Installer-v*.zip asset."
             exit 1
           fi
-          unzip -q "${ZIP}" -d site
+          # zips built on Windows use backslash separators; unzip extracts them but exits 1 (warning)
+          unzip -q "${ZIP}" -d site || [ $? -eq 1 ]
           test -f site/index.html
           test -f site/manifest.json
           test -d site/firmware
