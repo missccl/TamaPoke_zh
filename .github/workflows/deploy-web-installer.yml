@@ -1,14 +1,15 @@
 name: Deploy Web Installer
 
-# Deploys the browser installer package from a GitHub Release zip to GitHub Pages.
+# Publishes web/ (installer page) plus the release data bundle to GitHub Pages.
 #
-# The repo github-pages environment is limited to branch "main", so this workflow
-# must run from main (workflow_dispatch). Do not rely on release/tag refs — tags
-# such as "webinstaller" are blocked by that environment protection rule.
+# The release must contain TamaPoke-Web-Installer-v*.zip holding manifest.json,
+# firmware/ (bootloader.bin, partitions.bin, boot_app0.bin, app.bin,
+# build-info.json), and the sprite packs (sprites-*.pak, forms.pak). The packs
+# are not stored in git; they are served from the Pages origin because GitHub
+# release downloads lack the CORS headers the browser needs.
 #
-# Expected release asset: TamaPoke-Web-Installer-v*.zip from Build-Public.ps1.
-#
-# Run: Actions → Deploy Web Installer → Run workflow → branch main → tag e.g. webinstaller
+# github-pages is limited to branch "main": run this from main (workflow_dispatch).
+# Run: Actions -> Deploy Web Installer -> Run workflow -> branch main -> tag e.g. webinstaller
 
 on:
   workflow_dispatch:
@@ -34,35 +35,26 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Resolve release tag
-        id: tag
-        run: |
-          set -euo pipefail
-          TAG="${{ inputs.tag }}"
-          if [ -z "${TAG}" ]; then
-            echo "Release tag input is required."
-            exit 1
-          fi
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
 
-      - name: Download web installer zip
+      - name: Assemble site
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
           mkdir -p download site
-          gh release download "${{ steps.tag.outputs.tag }}" -R "${{ github.repository }}" \
+          cp -r web/. site/
+          gh release download "${TAG}" -R "${{ github.repository }}" \
             --pattern 'TamaPoke-Web-Installer-v*.zip' --dir download
           ZIP="$(find download -maxdepth 1 -type f -name 'TamaPoke-Web-Installer-v*.zip' | head -n 1)"
           if [ -z "${ZIP}" ]; then
-            echo "Release ${{ steps.tag.outputs.tag }} has no TamaPoke-Web-Installer-v*.zip asset."
+            echo "Release ${TAG} has no TamaPoke-Web-Installer-v*.zip asset."
             exit 1
           fi
           # zips built on Windows use backslash separators; unzip extracts them but exits 1 (warning)
-          unzip -q "${ZIP}" -d site || [ $? -eq 1 ]
-          test -f site/index.html
-          test -f site/manifest.json
-          test -d site/firmware
+          unzip -q -o "${ZIP}" -d site || [ $? -eq 1 ]
+          python3 tools/check_web.py site
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

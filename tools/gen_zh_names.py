@@ -55,6 +55,7 @@ MANUAL = {
 }
 for k, v in MANUAL.items():
     out.setdefault(k, v)
+out.update({k: v for k, v in json.loads((R / 'localization/names-zh-manual.json').read_text(encoding='utf-8')).items() if k not in out})
 missing = [k for k in keys if k not in out]
 (R / 'localization/names-zh.json').write_text(json.dumps({k: out[k] for k in keys if k in out}, ensure_ascii=False, indent=1), encoding='utf-8')
 (R / 'localization/names-zh-missing.txt').write_text('\n'.join(missing) + '\n', encoding='utf-8')

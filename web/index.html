@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="TamaPoke 香港繁體中文版。在瀏覽器安裝韌體和各地區精靈圖。">
+<title>TamaPoke 香港繁體中文版 · 安裝</title><style>
+  :root { --bg:#f6f7fb; --ink:#2a2a36; --accent:#b62b43; --ok:#58b868; --bad:#e8503a; --track:#d7dbe5; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:var(--bg);
+         color:var(--ink); line-height:1.6; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  h1 { font-size: 2rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.25rem; margin: 2.5rem 0 .5rem; }
+  .sub { color:#6b6b76; margin: 0 0 1.5rem; }
+  .step { background:#fff; border:1px solid var(--track); border-radius:14px; padding:1.25rem 1.5rem; margin: 1rem 0; }
+  .num { display:inline-flex; width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
+         align-items:center; justify-content:center; font-weight:600; margin-right:.5rem; font-size:.9rem; }
+  button { font: inherit; font-weight:500; padding:.6rem 1.2rem; border-radius:10px; border:1px solid var(--ink);
+           background:#fff; color:var(--ink); cursor:pointer; }
+  button:hover { background:var(--bg); }
+  button:disabled { opacity:1; color:#687386; border-color:#c3cbd7; background:#f4f5f8; cursor:default; }
+  esp-web-install-button { display:inline-block; }
+  esp-web-install-button[install-unsupported] { display:none; }
+  .unsupported { display:none; color:var(--bad); font-weight:500; }
+  .row { display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; }
+  #log { font-family: ui-monospace, monospace; font-size:.85rem; background:#1b1b25; color:#d8dcf0;
+         border-radius:10px; padding:.75rem 1rem; margin-top:1rem; max-height:220px; overflow:auto; white-space:pre-wrap; display:none; }
+  .bar { height:10px; background:var(--track); border-radius:5px; overflow:hidden; margin-top:.75rem; display:none; }
+  .bar > div { height:100%; width:0; background:var(--ok); transition: width .15s; }
+  code { background:#0001; padding:.1em .4em; border-radius:5px; }
+  a { color:var(--accent); }
+  .note { font-size:.9rem; color:#6b6b76; }
+
+  button:focus-visible,a:focus-visible{outline:3px solid #356ee8;outline-offset:3px}
+  .primary{background:var(--accent);color:white;border-color:var(--accent)}
+  .primary:hover{background:#952138} .note{font-size:.95rem;color:#505767}
+  .download-link{display:inline-flex;align-items:center;justify-content:center;font-weight:600;padding:.65rem 1rem;border:1px solid var(--accent);border-radius:10px;text-decoration:none;min-height:44px}
+  .download-link:hover{background:#f9edf0}.download-link.primary:hover{background:#952138}
+  .guide{border-color:#dbc4ca;background:#fffafb}.guide .note{margin-bottom:0}
+  .pack-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;margin:1rem 0}
+  .pack-grid button{text-align:left;font-size:1rem;padding:.7rem}
+  .version{font-size:.9rem;font-weight:500;color:#626a79} .safe{border-left:4px solid #258441;padding-left:1rem}
+  .step h2{margin:.1rem 0 1rem} #status{min-height:1.6em;color:#505767}
+  progress{width:100%;height:18px;accent-color:#258441} details{margin:1rem 0}summary{cursor:pointer;font-weight:600}
+  footer{margin-top:2rem;border-top:1px solid #d7dbe5;padding-top:1rem} @media(max-width:420px){.step{padding:1rem}.wrap{padding:1.2rem .8rem}.pack-grid{grid-template-columns:1fr}}
+</style></head><body><main class="wrap">
+<h1>TamaPoke 香港繁體中文版</h1><p class="sub">基於 Loaram/TamaPoke_ko · 1025 種 · 9 個地區<br>只支援 Waveshare ESP32-S3-Touch-AMOLED-1.75（需要 microSD 卡）</p>
+<section class="step"><h2><span class="num">1</span>安裝中文韌體 <span class="version" id="version"></span></h2>
+<p>用可傳輸資料的 USB 線把裝置連接到電腦，按下方按鈕並選擇序列埠。更新時<b>不要勾選 Erase device</b>，直接按 Next，存檔便會保留。</p>
+<div class="safe"><esp-web-install-button manifest="manifest.json"><button id="firmware" class="primary" slot="activate" disabled>安裝中文韌體</button>
+<span slot="unsupported">需要電腦版 Chrome 或 Edge。</span><span slot="not-allowed">請用 HTTPS 或 localhost 開啟。</span></esp-web-install-button></div>
+<p class="unsupported" id="unsupported">此瀏覽器不支援 Web Serial，請改用電腦版 Chrome 或 Edge，並以 HTTPS 開啟本頁。</p>
+<details><summary>看不到序列埠</summary><p>按住 <b>BOOT</b>，按一下 <b>RESET</b>，再放開 BOOT。充電專用線不能使用；請關閉其他安裝視窗和序列埠監視器，並避免使用 USB 集線器。</p></details>
+<p class="note">安裝工具的彈出視窗為英文。順序：Install → 不勾選 Erase device → Next。</p>
+</section>
+<section class="step"><h2><span class="num">2</span>安裝精靈圖</h2>
+<p>先把 microSD 卡插入裝置，再按「連接裝置」。</p>
+<div class="row"><button id="connect">連接裝置</button><button id="disconnect" disabled>中斷連接</button></div>
+<div class="pack-grid" id="packs">
+<button data-region="kanto" disabled>關都 · 42.7MB</button>
+<button data-region="johto" disabled>城都 · 29.2MB</button>
+<button data-region="hoenn" disabled>豐緣 · 40.7MB</button>
+<button data-region="sinnoh" disabled>神奧 · 35.1MB</button>
+<button data-region="unova" disabled>合眾 · 42.3MB</button>
+<button data-region="kalos" disabled>卡洛斯 · 22.3MB</button>
+<button data-region="alola" disabled>阿羅拉 · 29.5MB</button>
+<button data-region="galar" disabled>伽勒爾 · 26.9MB</button>
+<button data-region="paldea" disabled>帕底亞 · 31.1MB</button>
+<button data-region="forms" disabled>形態變化 · 83.9MB</button>
+</div>
+<div class="row"><button id="all" disabled>安裝全部地區和形態</button></div>
+<p class="note">「全部」會安裝 9 個地區和形態包。形態包需要支援形態變化的韌體。</p>
+<p id="status" role="status" aria-live="polite">連接裝置後便可選擇要安裝的地區。</p>
+<progress id="progress" value="0" max="100" aria-label="精靈圖安裝進度" hidden></progress>
+<pre id="log" aria-label="安裝記錄"></pre>
+<details><summary>安裝自製精靈圖檔案</summary><label>選擇精靈圖 .bin 檔案 <input id="files" type="file" accept=".bin" multiple disabled></label></details>
+</section>
+<section class="step"><h2><span class="num">3</span>中斷連接後重新啟動</h2><p>看到安裝完成的訊息後，按「中斷連接」並重新啟動裝置。</p>
+<p class="note">既有暱稱和存檔會保留。暱稱鍵盤仍為原版英文字母和數字。</p></section>
+<footer class="note"><p>原作：<a href="https://github.com/socquique/TamaPoke">Quique Tortosa · socquique/TamaPoke</a>（MIT）；經 <a href="https://github.com/DylanPDao/TamaPoke">DylanPDao/TamaPoke</a> 和 <a href="https://github.com/Loaram/TamaPoke_ko">Loaram/TamaPoke_ko</a> 衍生。</p>
+<p>精靈圖：<a href="https://github.com/PMDCollab/SpriteCollab">PMD SpriteCollab</a>（CC BY-NC 4.0）· <a href="credits-galar-paldea.md">伽勒爾和帕底亞作者名單</a></p>
+<p>Pokémon © Nintendo / Game Freak / The Pokémon Company。非官方、非商業的粉絲作品。</p></footer>
+</main><script type="module" src="https://unpkg.com/esp-web-tools@10.1.1/dist/web/install-button.js"></script><script src="installer.js" defer></script></body></html>
