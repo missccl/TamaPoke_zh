@@ -10,9 +10,17 @@
 
 ## 安裝方式
 
-### 瀏覽器安裝：Waveshare AMOLED 1.75
+### 瀏覽器線上安裝：Waveshare AMOLED 1.75
 
 公開基本韌體的瀏覽器安裝程式只支援 **Waveshare ESP32-S3-Touch-AMOLED-1.75（16 MB）**，不支援 1.75C。
+
+**方式 A：GitHub Pages 線上安裝（發布後）**
+
+1. 以 `Build-Public.ps1` 建置並把 `TamaPoke-Web-Installer-v*.zip` 上傳到 GitHub Release。
+2. 在儲存庫 Settings → Pages 將來源設為 **GitHub Actions**；發布 Release 後，`Deploy Web Installer` workflow 會自動部署。
+3. 用最新版桌面 Chrome 或 Microsoft Edge 開啟 Pages 網址，以 USB-C 連接裝置並按「連接裝置並安裝」。
+
+**方式 B：自行託管 ZIP**
 
 1. 從[本專案的 GitHub Releases](https://github.com/missccl/TamaPoke_zh/releases)下載 `TamaPoke-Web-Installer-v*.zip`，解壓後把整個資料夾放到支援 HTTPS 的靜態網站。
 2. 使用最新版桌面版 Chrome 或 Microsoft Edge 開啟該網站。
@@ -53,7 +61,7 @@ Windows 安裝程式會從 [PMDCollab/SpriteCollab](https://github.com/PMDCollab
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Build-Public.ps1
 ```
 
-腳本會建置兩款桌面安裝程式韌體，並另外輸出只供 1.75 使用的瀏覽器安裝資料夾及 ZIP。瀏覽器套件只包含基本韌體，不會加入精靈圖、LittleFS 資產或使用者檔案。
+腳本會建置兩款桌面安裝程式韌體，並另外輸出只供 1.75 使用的瀏覽器安裝資料夾及 ZIP（含 `index.html`、樣式／腳本、`manifest.json` 與 `firmware/`）。瀏覽器套件只包含基本韌體，不會加入精靈圖、LittleFS 資產或使用者檔案。把該 ZIP 上傳到 Release 後，可透過 `.github/workflows/deploy-web-installer.yml` 部署到 GitHub Pages。
 
 ## 專案及權利聲明
 

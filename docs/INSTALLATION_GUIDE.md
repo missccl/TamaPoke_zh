@@ -11,27 +11,36 @@
 
 **瀏覽器安裝不支援 1.75C。** 如不確定板子型號，請查看裝置標籤；不要把 1.75 韌體安裝到其他 ESP32-S3 板上。
 
-## 瀏覽器安裝（只限 1.75）
+## 瀏覽器線上安裝（只限 1.75）
 
 ### 需要準備
 
 - Waveshare ESP32-S3-Touch-AMOLED-1.75（16 MB）
 - 可傳輸資料的 USB-C 線
 - 最新版桌面版 Google Chrome 或 Microsoft Edge
-- 透過 HTTPS 提供的安裝網頁，以及穩定的互聯網連線
+- 透過 HTTPS 提供的安裝網頁（GitHub Pages 或自架靜態網站），以及穩定的互聯網連線
 
 Web Serial 需要安全連線和瀏覽器支援。Safari、Firefox 和手機瀏覽器不適用。若使用 Linux，瀏覽器可能需要額外的序列埠存取權限。
 
-### 安裝步驟
+### 方式 A：GitHub Pages 線上安裝
+
+1. 維護者執行 `Build-Public.ps1`，把產生的 `TamaPoke-Web-Installer-v*.zip` 一併上傳到 GitHub Release。
+2. 在儲存庫 Settings → Pages 將來源設為 **GitHub Actions**（只需設定一次）。
+3. 發布 Release 後，`Deploy Web Installer` workflow 會把 ZIP 內容部署到 Pages。
+4. 使用者用桌面 Chrome／Edge 開啟 Pages 網址，喚醒裝置並以 USB-C 連接，按「連接裝置並安裝」。
+
+亦可在 Actions 手動執行該 workflow，並指定已含 Web Installer ZIP 的 Release 標籤。
+
+### 方式 B：自行託管 ZIP
 
 1. 從[本專案的 GitHub Releases](https://github.com/missccl/TamaPoke_zh/releases)下載 `TamaPoke-Web-Installer-v*.zip`，並解壓縮。
-2. 把解壓後的所有檔案（包括 `manifest.json` 和 `firmware` 資料夾）放在同一個 HTTPS 靜態網站目錄。
+2. 把解壓後的所有檔案（包括 `index.html`、`installer.css`、`installer.js`、`manifest.json` 和 `firmware` 資料夾）放在同一個 HTTPS 靜態網站目錄。
 3. 讓瀏覽器開啟該目錄的 `index.html`。只在本機測試時可使用 `localhost`；直接以 `file://` 開啟不受支援。
 4. 喚醒裝置，使用 USB-C 資料線連接電腦。
-5. 按網頁上的安裝按鈕，在系統對話框選擇裝置的 ESP32-S3 序列埠，並依畫面提示完成安裝。
+5. 按網頁上的「連接裝置並安裝」，在系統對話框選擇裝置的 ESP32-S3 序列埠，並依畫面提示完成安裝。
 6. 安裝期間不要拔除 USB 線或關閉瀏覽器頁面。
 
-如果沒有顯示序列埠，請改用資料線、USB 埠或支援的桌面瀏覽器，並檢查系統序列埠權限。
+如果沒有顯示序列埠，請改用資料線、USB 埠或支援的桌面瀏覽器，並檢查系統序列埠權限。頁面若顯示找不到 `manifest.json` 或韌體檔案，代表部署的不是完整套件。
 
 ### 公開基本韌體的限制
 
