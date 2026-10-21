@@ -17,8 +17,10 @@
 **方式 A：GitHub Pages 線上安裝（發布後）**
 
 1. 以 `Build-Public.ps1` 建置並把 `TamaPoke-Web-Installer-v*.zip` 上傳到 GitHub Release。
-2. 在儲存庫 Settings → Pages 將來源設為 **GitHub Actions**；發布 Release 後，`Deploy Web Installer` workflow 會自動部署。
-3. 用最新版桌面 Chrome 或 Microsoft Edge 開啟 Pages 網址，以 USB-C 連接裝置並按「連接裝置並安裝」。
+2. 在儲存庫 Settings → Pages 將來源設為 **GitHub Actions**。
+3. 開啟 Actions → **Deploy Web Installer** → **Run workflow**，分支選 **main**，tag 填該 Release 標籤（例如 `webinstaller`），再執行。  
+   （`github-pages` 環境只允許從 `main` 部署；不要用 tag 觸發，否則會被 environment protection 擋下。）
+4. 用最新版桌面 Chrome 或 Microsoft Edge 開啟 Pages 網址，以 USB-C 連接裝置並按「連接裝置並安裝」。
 
 **方式 B：自行託管 ZIP**
 
@@ -55,7 +57,21 @@ Windows 安裝程式會從 [PMDCollab/SpriteCollab](https://github.com/PMDCollab
 
 ## 開發者建置
 
-需要 Arduino CLI、ESP32 Arduino Core 3.3.11、.NET 10 SDK、GFX Library for Arduino 1.6.7、SensorLib 0.4.1 及 XPowersLib 0.3.3。於 PowerShell 執行：
+需要 Arduino CLI、ESP32 Arduino Core 3.3.11、.NET 10 SDK、GFX Library for Arduino 1.6.7、SensorLib 0.4.1 及 XPowersLib 0.3.3。
+
+首次在 Windows 準備工具（PowerShell）：
+
+```powershell
+winget install ArduinoSA.CLI
+winget install Microsoft.DotNet.SDK.10
+# 關閉並重新開啟 PowerShell，讓 PATH 生效
+arduino-cli config init
+arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+arduino-cli core install esp32:esp32@3.3.11 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+arduino-cli lib install "GFX Library for Arduino@1.6.7" "SensorLib@0.4.1" "XPowersLib@0.3.3"
+```
+
+然後在儲存庫根目錄執行：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Build-Public.ps1
