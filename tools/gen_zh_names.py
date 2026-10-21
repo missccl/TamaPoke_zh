@@ -41,6 +41,20 @@ for k in moves:
     m = mv.get(mv_id.get(norm(k), ''))
     if m:
         out.setdefault(k, m)
+MANUAL = {
+    'HI JUMP KICK': '飛膝踢', 'DAZZLE GLEAM': '魔法閃耀', 'VISE GRIP': '夾住',
+    'DRAIN KISS': '吸取之吻', 'MAGIC LEAF': '魔法葉', 'MALIGN CHAIN': '邪毒鎖鏈',
+    'NORMAL': '一般', 'FIRE': '火', 'WATER': '水', 'ELECTRIC': '電', 'GRASS': '草',
+    'ICE': '冰', 'FIGHTING': '格鬥', 'POISON': '毒', 'GROUND': '地面', 'FLYING': '飛行',
+    'BUG': '蟲', 'ROCK': '岩石', 'GHOST': '幽靈', 'DRAGON': '龍', 'DARK': '惡',
+    'STEEL': '鋼', 'FAIRY': '妖精',
+    'KANTO': '關都', 'JOHTO': '城都', 'HOENN': '豐緣', 'SINNOH': '神奧', 'UNOVA': '合眾',
+    'KALOS': '卡洛斯', 'ALOLA': '阿羅拉', 'GALAR': '伽勒爾', 'PALDEA': '帕底亞',
+    'ALL': '全部', 'OK': '確定', 'tap...': '點按…', 'STAB': '本系加成',
+    'CHAMPION': '冠軍', 'ELITE 4': '四天王', 'RIVAL': '對手', 'SWORD': '劍', 'SHIELD': '盾',
+}
+for k, v in MANUAL.items():
+    out.setdefault(k, v)
 missing = [k for k in keys if k not in out]
 (R / 'localization/names-zh.json').write_text(json.dumps({k: out[k] for k in keys if k in out}, ensure_ascii=False, indent=1), encoding='utf-8')
 (R / 'localization/names-zh-missing.txt').write_text('\n'.join(missing) + '\n', encoding='utf-8')
