@@ -2,21 +2,22 @@ name: Deploy Web Installer
 
 # Publishes web/ (installer page) plus the release data bundle to GitHub Pages.
 #
-# The release must contain TamaPoke-Web-Installer-v*.zip holding manifest.json,
-# firmware/ (bootloader.bin, partitions.bin, boot_app0.bin, app.bin,
-# build-info.json), sprites-*.pak and forms.pak. The packs are not stored in
-# git. Release downloads do not send CORS headers, so the workflow copies the
-# firmware and packs next to the installer page and publishes that site.
+# The release must contain one zip holding manifest.json, firmware/
+# (bootloader.bin, partitions.bin, boot_app0.bin, app.bin, build-info.json),
+# sprites-*.pak and forms.pak. The zip may use any file name. A file named
+# TamaPoke-Web-Installer-v*.zip is preferred when several zips are attached.
+# The packs are not stored in git. Release downloads do not send CORS headers,
+# so the workflow copies the firmware and packs next to the installer page.
 # A nested folder or Windows backslash paths inside the zip are lifted out.
 #
 # github-pages is limited to branch "main": run this from main (workflow_dispatch).
-# Run: Actions -> Deploy Web Installer -> Run workflow -> branch main -> tag e.g. tamapoke-ko-zh
+# Run: Actions -> Deploy Web Installer -> Run workflow -> branch main -> tag e.g. release-20261022
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag that contains TamaPoke-Web-Installer-v*.zip (e.g. tamapoke-ko-zh)
+        description: Release tag whose zip contains the firmware and sprite packs (e.g. release-20261022)
         required: true
         type: string
 
@@ -45,13 +46,23 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p download
-          gh release download "${TAG}" -R "${{ github.repository }}" \
-            --pattern 'TamaPoke-Web-Installer-v*.zip' --dir download
-          ZIP="$(find download -maxdepth 1 -type f -name 'TamaPoke-Web-Installer-v*.zip' | head -n 1)"
-          if [ -z "${ZIP}" ]; then
-            echo "Release ${TAG} has no TamaPoke-Web-Installer-v*.zip asset."
+          if ! gh release download "${TAG}" -R "${{ github.repository }}" \
+            --pattern '*.zip' --dir download; then
+            echo "Release ${TAG} has no zip asset."
+            gh release view "${TAG}" -R "${{ github.repository }}" --json assets --jq '.assets[].name' || true
             exit 1
           fi
+          ZIP="$(find download -maxdepth 1 -type f -name 'TamaPoke-Web-Installer-v*.zip' | head -n 1 || true)"
+          if [ -z "${ZIP}" ]; then
+            mapfile -t ZIPS < <(find download -maxdepth 1 -type f -name '*.zip' | sort)
+            if [ "${#ZIPS[@]}" -ne 1 ]; then
+              echo "Release ${TAG} needs one zip, or a file named TamaPoke-Web-Installer-v*.zip."
+              printf 'Found: %s\n' "${ZIPS[@]:-none}"
+              exit 1
+            fi
+            ZIP="${ZIPS[0]}"
+          fi
+          echo "Using $(basename "${ZIP}")"
           python3 tools/assemble_site.py "${ZIP}" site --tag "${TAG}"
           python3 tools/check_web.py site
 

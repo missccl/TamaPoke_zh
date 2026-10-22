@@ -5,11 +5,12 @@ const enc = new TextEncoder();
 const regionNames = {kanto:'關都',johto:'城都',hoenn:'豐緣',sinnoh:'神奧',unova:'合眾',kalos:'卡洛斯',alola:'阿羅拉',galar:'伽勒爾',paldea:'帕底亞'};
 regionNames.forms='形態變化';
 let port, reader, writer, pendingRead, decoder = new TextDecoder(), lineBuf = '', busy = false, firmwareReady = false;
-let usingLocal = false, blobUrls = [];
+let usingLocalFirmware = false, blobUrls = [];
 const localPak = new Map();
 const VERSION_RE = /^(?:\d+\.\d+\.\d+|zh\.\d+\.\d+\.\d+[a-z]?|\d+\.\d+-zh\.\d+)$/;
 const EXPECTED_PARTS = [['firmware/bootloader.bin',0],['firmware/partitions.bin',32768],['firmware/boot_app0.bin',57344],['firmware/app.bin',65536]];
 const regionButtons = [...document.querySelectorAll('[data-region]')];
+const defaultLabel = new Map(regionButtons.map(button => [button.dataset.region, button.textContent]));
 function log(message) { el('log').style.display='block'; el('log').textContent=(el('log').textContent+message+'\n').split('\n').slice(-301).join('\n'); el('log').scrollTop=el('log').scrollHeight; }
 function status(message) { el('status').textContent=message; }
 function controls() {
@@ -20,6 +21,7 @@ function controls() {
   el('files').disabled=!ready;
   el('package').disabled=busy;
   el('folder').disabled=busy;
+  el('local-sprites').disabled=busy;
   el('firmware').disabled=!firmwareReady || !!port || busy;
   for(const button of regionButtons) button.disabled=!ready || button.dataset.missing==='true';
 }
@@ -214,10 +216,11 @@ async function usePackage(pkg, label) {
       button.textContent = `${regionNames[region]} · ${(bytes / 1e6).toFixed(1)}MB`;
       localPak.set(region, () => pkg.read(full));
     }
-    usingLocal = true;
+    usingLocalFirmware = true;
     firmwareReady = true;
     el('version').textContent = 'v' + manifest.version;
     el('package-name').textContent = `將燒錄：${label}（${manifestName}）`;
+    el('sprite-source').textContent = `精靈圖來自本機：${label}`;
     status('已改用你選擇的套件。安裝韌體後，連接裝置即可把精靈圖寫進 microSD。');
     log(`已載入 ${label}：${manifestName}`);
     controls();
@@ -233,14 +236,48 @@ async function loadPicked(action) {
   catch (error) { status(error.message); log(error.message); }
   finally { busy = false; controls(); }
 }
+function regionFromPakName(name) {
+  const base = name.split(/[/\\]/).pop();
+  if (base.toLowerCase() === 'forms.pak') return 'forms';
+  const match = /^sprites-([a-z]+)\.pak$/i.exec(base);
+  if (!match) return '';
+  const id = match[1].toLowerCase();
+  return regionNames[id] ? id : '';
+}
+function rememberPak(region, size, read) {
+  const button = regionButtons.find(item => item.dataset.region === region);
+  button.dataset.missing = 'false';
+  button.textContent = `${regionNames[region]} · 本機 ${(size / 1e6).toFixed(1)}MB`;
+  localPak.set(region, read);
+}
+async function useLocalPaks(files) {
+  const skipped = [];
+  localPak.clear();
+  for (const button of regionButtons) {
+    button.dataset.missing = 'true';
+    button.textContent = defaultLabel.get(button.dataset.region);
+  }
+  for (const file of files) {
+    const region = regionFromPakName(file.name);
+    if (!region) skipped.push(file.name);
+    else rememberPak(region, file.size, () => file.arrayBuffer());
+  }
+  if (!localPak.size) throw new Error('請選擇 sprites-地區.pak 或 forms.pak。');
+  if (skipped.length) log(`略過：${skipped.join('、')}`);
+  const names = [...localPak.keys()].map(id => regionNames[id]).join('、');
+  el('sprite-source').textContent = `將從本機安裝：${names}`;
+  status('已讀到本機精靈圖。連接裝置後即可寫進 microSD，不會再從網頁下載。');
+  log(`已選擇本機精靈圖：${names}`);
+}
 async function loadRegion(region) {
   const name=regionNames[region];if(!name) throw new Error('未知地區。');
   let buf;
-  if (usingLocal) {
-    const read = localPak.get(region);
-    if (!read) throw new Error(`這個套件沒有${name}精靈圖。`);
-    status(`正在從本地套件讀取${name}…`);
+  const read = localPak.get(region);
+  if (read) {
+    status(`正在從本機讀取${name}…`);
     buf = await read();
+  } else if (localPak.size) {
+    throw new Error(`本機沒有${name}。請把該 .pak 一併選入。`);
   } else {
     status(`正在下載${name}精靈圖…`);
     // Bundles stay on the same origin. GitHub release downloads do not provide
@@ -277,8 +314,29 @@ el('folder').onchange=event=>{
   const label=(files[0].webkitRelativePath||files[0].name).split(/[\\/]/)[0]||'資料夾';
   loadPicked(()=>usePackage(openFileList(files), label));
 };
+el('local-sprites').onchange=event=>{
+  const files=[...event.target.files];
+  event.target.value='';
+  if(!files.length) return;
+  loadPicked(async()=>{
+    const zips=files.filter(file=>/\.zip$/i.test(file.name));
+    const paks=files.filter(file=>/\.pak$/i.test(file.name));
+    if(zips.length===1 && files.length===1){
+      status('正在讀取已下載的壓縮檔…');
+      await usePackage(openZip(await zips[0].arrayBuffer()), zips[0].name);
+      return;
+    }
+    if(zips.length) throw new Error('請只選一個 zip，或只選多個 .pak，不要混在一起。');
+    if(!paks.length) throw new Error('請選擇 .pak 精靈圖包，或已下載的安裝 zip。');
+    await useLocalPaks(paks);
+  });
+};
 el('files').onchange=event=>runInstall(async()=>{
-  const items=[];for(const f of event.target.files) items.push({name:'mons/'+f.name,data:new Uint8Array(await f.arrayBuffer())});
+  const items=[];
+  for(const f of event.target.files){
+    if(/\.pak$/i.test(f.name)) items.push(...parsePak(await f.arrayBuffer()));
+    else items.push({name:'mons/'+f.name,data:new Uint8Array(await f.arrayBuffer())});
+  }
   if(!items.length) throw new Error('請選擇檔案。');await sendAll(items,'自選檔案');
 });
 if(!('serial' in navigator)||!isSecureContext) el('unsupported').style.display='block';
@@ -293,7 +351,7 @@ async function loadHosted() {
   try {
     const [manifest, info] = await Promise.all(['manifest.json','firmware/build-info.json'].map(url =>
       fetch(url, {cache:'no-store'}).then(r => { if (!r.ok) throw Error(); return r.json(); })));
-    if (usingLocal) return;
+    if (usingLocalFirmware) return;
     assertManifest(manifest, info);
     el('version').textContent = 'v' + manifest.version;
     firmwareReady = true;
@@ -311,7 +369,7 @@ async function loadHosted() {
     status('可以安裝韌體。完成後插入 microSD，連接裝置，再安裝全部地區和形態。');
     controls();
   } catch (_) {
-    if (usingLocal) return;
+    if (usingLocalFirmware) return;
     el('version').textContent = '需要確認版本';
     el('package-name').textContent = '網頁上沒有 GitHub Release 套件。請展開上方選項，改選電腦上的 zip。';
     status('網頁上沒有可用的韌體。請選擇電腦上已下載的 zip，或解壓後的資料夾。');

@@ -16,7 +16,7 @@
 
 **方式 A：GitHub Pages 線上安裝（發布後）**
 
-1. 把含有韌體、`sprites-*.pak` 和 `forms.pak` 的 `TamaPoke-Web-Installer-v*.zip` 上傳到 GitHub Release。
+1. 把含有韌體、`sprites-*.pak` 和 `forms.pak` 的 zip 上傳到 GitHub Release。檔名可以是 `TamaPoke-Web-Installer-v*.zip`，也可以是其他名稱，例如 `release20261022.zip`。
 2. 在儲存庫 Settings → Pages 將來源設為 **GitHub Actions**。
 3. 開啟 Actions → **Deploy Web Installer** → **Run workflow**，分支選 **main**，tag 填該 Release 標籤（例如 `tamapoke-ko-zh`），再執行。  
    （`github-pages` 環境只允許從 `main` 部署；不要用 tag 觸發，否則會被 environment protection 擋下。）
@@ -32,7 +32,7 @@ Release 的 zip 下載沒有瀏覽器需要的 CORS 標頭，所以頁面不能�
 
 瀏覽器必須支援 Web Serial，頁面亦必須透過 HTTPS 提供（`localhost` 除外）。Safari、Firefox 和手機瀏覽器不支援此安裝方式。安裝不會清除使用者資料，但更換韌體前仍建議先備份。
 
-已經下載 `TamaPoke-Web-Installer-v1.zip` 時，在安裝頁按「選擇 zip」，並選下載資料夾裡的那個檔案。網頁上若是舊檔，其後只燒錄你選的這一份。若該路徑是解壓後的資料夾而不是壓縮檔，改按「選擇已解壓的資料夾」，並且只選 `TamaPoke-Web-Installer-v1.zip` 這個資料夾，不要選整個下載資料夾；上層資料夾同時有舊檔時，頁面會停下來。韌體寫入後，插入 microSD，按「連接裝置」，再按「安裝全部地區和形態」，精靈圖會寫進卡裡。不要直接雙擊 html 檔。可在 `web` 目錄執行 `python3 -m http.server 8080`，再用 Chrome 或 Edge 開啟 `http://localhost:8080`。
+已經在 GitHub Release 頁下載 zip 或解壓出 `.pak` 時，在安裝頁按「選擇已下載的 .pak 或 zip」。可一次選多個 `sprites-地區.pak` 和 `forms.pak`，或只選那個 zip。其後精靈圖從本機讀取，不會再從網頁下載。若選的是解壓後的資料夾而不是壓縮檔，改按「選擇已解壓的資料夾」，並且只選含有 `manifest.json` 的那個資料夾。韌體寫入後，插入 microSD，按「連接裝置」，再按「安裝全部地區和形態」。不要直接雙擊 html 檔。可在 `web` 目錄執行 `python3 -m http.server 8080`，再用 Chrome 或 Edge 開啟 `http://localhost:8080`。
 
 釋出的 Web Installer zip 含有韌體和地區精靈圖。未選擇本地套件、網站上又只有基本韌體時，板上可能尚未有精靈圖。
 

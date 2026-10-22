@@ -59,7 +59,10 @@
 <p class="note">安裝工具的彈出視窗為英文。順序：Install → 不勾選 Erase device → Next。</p>
 </section>
 <section class="step"><h2><span class="num">2</span>安裝精靈圖</h2>
-<p>韌體安裝完成後，先把 microSD 卡插入裝置，再按「連接裝置」。地區包和形態包都來自同一個 GitHub Release。</p>
+<p>先在 <a href="https://github.com/missccl/TamaPoke_zh/releases/latest">GitHub Release</a> 下載 zip，或解壓出 <code>.pak</code>。回到這頁選擇那些本機檔案。安裝時只讀電腦上的檔案，不會再從網頁下載。</p>
+<div class="row"><label class="download-link primary">選擇已下載的 .pak 或 zip<input id="local-sprites" class="file" type="file" accept=".pak,.zip,application/zip" multiple></label></div>
+<p class="note" id="sprite-source">尚未選擇本機精靈圖。可一次選多個 sprites-地區.pak 和 forms.pak，或只選已下載的 zip。</p>
+<p>選好檔案後，把 microSD 卡插入裝置，再按「連接裝置」。</p>
 <div class="row"><button id="connect">連接裝置</button><button id="disconnect" disabled>中斷連接</button></div>
 <div class="pack-grid" id="packs">
 <button data-region="kanto" disabled>關都 · 42.1MB</button>
@@ -78,7 +81,7 @@
 <p id="status" role="status" aria-live="polite">連接裝置後便可選擇要安裝的地區。</p>
 <progress id="progress" value="0" max="100" aria-label="精靈圖安裝進度" hidden></progress>
 <pre id="log" aria-label="安裝記錄"></pre>
-<details><summary>安裝自製精靈圖檔案</summary><label>選擇精靈圖 .bin 檔案 <input id="files" type="file" accept=".bin" multiple disabled></label></details>
+<details><summary>安裝自製精靈圖檔案</summary><label>選擇 .pak 或 .bin <input id="files" type="file" accept=".pak,.bin" multiple disabled></label></details>
 </section>
 <section class="step"><h2><span class="num">3</span>中斷連接後重新啟動</h2><p>看到安裝完成的訊息後，按「中斷連接」並重新啟動裝置。</p>
 <p class="note">既有暱稱和存檔會保留。暱稱鍵盤仍為原版英文字母和數字。</p></section>
