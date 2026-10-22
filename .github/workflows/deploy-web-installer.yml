@@ -4,18 +4,19 @@ name: Deploy Web Installer
 #
 # The release must contain TamaPoke-Web-Installer-v*.zip holding manifest.json,
 # firmware/ (bootloader.bin, partitions.bin, boot_app0.bin, app.bin,
-# build-info.json), and the sprite packs (sprites-*.pak, forms.pak). The packs
-# are not stored in git; they are served from the Pages origin because GitHub
-# release downloads lack the CORS headers the browser needs.
+# build-info.json), sprites-*.pak and forms.pak. The packs are not stored in
+# git. Release downloads do not send CORS headers, so the workflow copies the
+# firmware and packs next to the installer page and publishes that site.
+# A nested folder or Windows backslash paths inside the zip are lifted out.
 #
 # github-pages is limited to branch "main": run this from main (workflow_dispatch).
-# Run: Actions -> Deploy Web Installer -> Run workflow -> branch main -> tag e.g. webinstaller
+# Run: Actions -> Deploy Web Installer -> Run workflow -> branch main -> tag e.g. tamapoke-ko-zh
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag that contains TamaPoke-Web-Installer-v*.zip (e.g. webinstaller)
+        description: Release tag that contains TamaPoke-Web-Installer-v*.zip (e.g. tamapoke-ko-zh)
         required: true
         type: string
 
@@ -43,8 +44,7 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          mkdir -p download site
-          cp -r web/. site/
+          mkdir -p download
           gh release download "${TAG}" -R "${{ github.repository }}" \
             --pattern 'TamaPoke-Web-Installer-v*.zip' --dir download
           ZIP="$(find download -maxdepth 1 -type f -name 'TamaPoke-Web-Installer-v*.zip' | head -n 1)"
@@ -52,8 +52,7 @@ jobs:
             echo "Release ${TAG} has no TamaPoke-Web-Installer-v*.zip asset."
             exit 1
           fi
-          # zips built on Windows use backslash separators; unzip extracts them but exits 1 (warning)
-          unzip -q -o "${ZIP}" -d site || [ $? -eq 1 ]
+          python3 tools/assemble_site.py "${ZIP}" site --tag "${TAG}"
           python3 tools/check_web.py site
 
       - name: Setup Pages

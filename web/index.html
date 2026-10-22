@@ -45,11 +45,13 @@
 </style></head><body><main class="wrap">
 <h1>TamaPoke 香港繁體中文版</h1><p class="sub">基於 Loaram/TamaPoke_ko · 1025 種 · 9 個地區<br>只支援 Waveshare ESP32-S3-Touch-AMOLED-1.75（需要 microSD 卡）</p>
 <section class="step"><h2><span class="num">1</span>安裝中文韌體 <span class="version" id="version"></span></h2>
-<p>用可傳輸資料的 USB 線把裝置連接到電腦。若這個網頁留着舊檔，請改選你已下載的 zip，或只選最新解壓出來的資料夾。安裝按鈕其後只燒錄你選的那一份。</p>
+<p>這個網頁燒錄 GitHub Release 裡的中文韌體。用可傳輸資料的 USB 線連接裝置。更新時<b>不要勾選 Erase device</b>，直接按 Next，存檔便會保留。</p>
+<p class="note" id="package-name">正在讀取 GitHub Release 套件…</p>
+<details><summary>改用電腦上的 zip</summary>
+<p>若網頁上的套件不是你要的那一份，可改選已下載的 TamaPoke-Web-Installer zip，或只選解壓後的那個資料夾。其後只燒錄你選的那一份。</p>
 <div class="row"><label class="download-link primary">選擇 zip<input id="package" class="file" type="file" accept=".zip,application/zip"></label>
 <label class="download-link">選擇已解壓的資料夾<input id="folder" class="file" type="file" webkitdirectory directory multiple></label></div>
-<p class="note" id="package-name">尚未選擇。下載資料夾裡的 TamaPoke-Web-Installer-v1.zip 若是壓縮檔，按「選擇 zip」；若它是解壓後的資料夾，按「選擇已解壓的資料夾」，並且只選該資料夾，不要選整個下載資料夾。</p>
-<p>更新時<b>不要勾選 Erase device</b>，直接按 Next，存檔便會保留。</p>
+</details>
 <div class="safe"><esp-web-install-button manifest="manifest.json"><button id="firmware" class="primary" slot="activate" disabled>安裝中文韌體</button>
 <span slot="unsupported">需要電腦版 Chrome 或 Edge。</span><span slot="not-allowed">請用 HTTPS 或 localhost 開啟。</span></esp-web-install-button></div>
 <p class="unsupported" id="unsupported">此瀏覽器不支援 Web Serial，請改用電腦版 Chrome 或 Edge，並以 HTTPS 開啟本頁。</p>
@@ -57,13 +59,13 @@
 <p class="note">安裝工具的彈出視窗為英文。順序：Install → 不勾選 Erase device → Next。</p>
 </section>
 <section class="step"><h2><span class="num">2</span>安裝精靈圖</h2>
-<p>先把 microSD 卡插入裝置，再按「連接裝置」。</p>
+<p>韌體安裝完成後，先把 microSD 卡插入裝置，再按「連接裝置」。地區包和形態包都來自同一個 GitHub Release。</p>
 <div class="row"><button id="connect">連接裝置</button><button id="disconnect" disabled>中斷連接</button></div>
 <div class="pack-grid" id="packs">
-<button data-region="kanto" disabled>關都 · 42.7MB</button>
-<button data-region="johto" disabled>城都 · 29.2MB</button>
-<button data-region="hoenn" disabled>豐緣 · 40.7MB</button>
-<button data-region="sinnoh" disabled>神奧 · 35.1MB</button>
+<button data-region="kanto" disabled>關都 · 42.1MB</button>
+<button data-region="johto" disabled>城都 · 28.7MB</button>
+<button data-region="hoenn" disabled>豐緣 · 40.2MB</button>
+<button data-region="sinnoh" disabled>神奧 · 34.6MB</button>
 <button data-region="unova" disabled>合眾 · 42.3MB</button>
 <button data-region="kalos" disabled>卡洛斯 · 22.3MB</button>
 <button data-region="alola" disabled>阿羅拉 · 29.5MB</button>

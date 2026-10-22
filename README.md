@@ -16,11 +16,13 @@
 
 **方式 A：GitHub Pages 線上安裝（發布後）**
 
-1. 以 `Build-Public.ps1` 建置並把 `TamaPoke-Web-Installer-v*.zip` 上傳到 GitHub Release。
+1. 把含有韌體、`sprites-*.pak` 和 `forms.pak` 的 `TamaPoke-Web-Installer-v*.zip` 上傳到 GitHub Release。
 2. 在儲存庫 Settings → Pages 將來源設為 **GitHub Actions**。
-3. 開啟 Actions → **Deploy Web Installer** → **Run workflow**，分支選 **main**，tag 填該 Release 標籤（例如 `webinstaller`），再執行。  
+3. 開啟 Actions → **Deploy Web Installer** → **Run workflow**，分支選 **main**，tag 填該 Release 標籤（例如 `tamapoke-ko-zh`），再執行。  
    （`github-pages` 環境只允許從 `main` 部署；不要用 tag 觸發，否則會被 environment protection 擋下。）
-4. 用最新版桌面 Chrome 或 Microsoft Edge 開啟 Pages 網址，以 USB-C 連接裝置並按「連接裝置並安裝」。
+4. 用最新版桌面 Chrome 或 Microsoft Edge 開啟 Pages 網址。先安裝中文韌體，插入 microSD，再按「安裝全部地區和形態」。
+
+Release 的 zip 下載沒有瀏覽器需要的 CORS 標頭，所以頁面不能直接抓 Release 檔案。這個 workflow 會把 zip 裡的韌體、九個地區包和形態包放到同一個網站上再發布。zip 內若多一層資料夾，或路徑用反斜線，也會先抽出來。
 
 **方式 B：自行託管 ZIP**
 
