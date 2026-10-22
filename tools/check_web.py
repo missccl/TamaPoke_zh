@@ -14,7 +14,8 @@ html = (W / 'index.html').read_text(encoding='utf-8')
 js = (W / 'installer.js').read_text(encoding='utf-8') + '\n' + (W / 'zip.js').read_text(encoding='utf-8')
 assert '<html lang="zh-HK">' in html and 'TamaPoke 香港繁體中文版' in html
 assert 'Erase device' in html and 'sprites-${region}.pak' in js and "from './zip.js'" in js
-assert 'id="package"' in html and 'id="folder"' in html and "cache:'no-store'" in js
+assert 'id="package"' in html and 'id="folder"' in html and 'id="local-sprites"' in html and "cache:'no-store'" in js
+assert 'accept=".pak,.bin"' in html and 'forms.pak' in html
 assert 'release.json' in js and 'GitHub Release' in html and 'forms.pak' in js
 assert not re.search('[\uac00-\ud7a3]', html + js), 'Korean text left in installer'
 for i in ('connect', 'disconnect', 'all', 'files', 'firmware', 'version', 'status', 'progress', 'log', 'unsupported'):
@@ -28,7 +29,7 @@ for p in packs:
 if full:
     rel = json.loads((W / 'release.json').read_text(encoding='utf-8'))
     assert re.fullmatch(r'[A-Za-z0-9._-]+', rel.get('tag', ''))
-    assert str(rel.get('asset', '')).startswith('TamaPoke-Web-Installer-')
+    assert str(rel.get('asset', '')).endswith('.zip')
     m = json.loads((W / 'manifest.json').read_text(encoding='utf-8'))
     info = json.loads((W / 'firmware/build-info.json').read_text(encoding='utf-8'))
     assert m['version'] == info['version'] and m.get('new_install_prompt_erase') is True
