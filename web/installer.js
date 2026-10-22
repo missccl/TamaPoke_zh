@@ -284,9 +284,38 @@ el('files').onchange=event=>runInstall(async()=>{
 if(!('serial' in navigator)||!isSecureContext) el('unsupported').style.display='block';
 if('serial' in navigator) navigator.serial.addEventListener('disconnect',async()=>{await disconnect();status('USB 連線已中斷，請重新連接。');});
 controls();
-Promise.all(['manifest.json','firmware/build-info.json'].map(url=>fetch(url,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error();return r.json();})))
-  .then(([m,info])=>{
-    if(usingLocal) return;
-    assertManifest(m, info);
-    el('version').textContent='v'+m.version;firmwareReady=true;controls();
-  }).catch(()=>{ if(usingLocal) return; el('version').textContent='需要確認版本';status('網頁上沒有可用的韌體。請選擇電腦上已下載的 zip，或解壓後的資料夾。');controls(); });
+async function loadHosted() {
+  let release = null;
+  try {
+    const response = await fetch('release.json', {cache:'no-store'});
+    if (response.ok) release = await response.json();
+  } catch (_) {}
+  try {
+    const [manifest, info] = await Promise.all(['manifest.json','firmware/build-info.json'].map(url =>
+      fetch(url, {cache:'no-store'}).then(r => { if (!r.ok) throw Error(); return r.json(); })));
+    if (usingLocal) return;
+    assertManifest(manifest, info);
+    el('version').textContent = 'v' + manifest.version;
+    firmwareReady = true;
+    const tag = release && /^[A-Za-z0-9._-]+$/.test(release.tag) ? release.tag : '';
+    if (tag) {
+      const link = document.createElement('a');
+      link.href = 'https://github.com/missccl/TamaPoke_zh/releases/tag/' + tag;
+      link.rel = 'noopener noreferrer';
+      link.textContent = tag;
+      el('package-name').textContent = '線上套件：GitHub Release ';
+      el('package-name').append(link);
+    } else {
+      el('package-name').textContent = '線上套件已就緒。';
+    }
+    status('可以安裝韌體。完成後插入 microSD，連接裝置，再安裝全部地區和形態。');
+    controls();
+  } catch (_) {
+    if (usingLocal) return;
+    el('version').textContent = '需要確認版本';
+    el('package-name').textContent = '網頁上沒有 GitHub Release 套件。請展開上方選項，改選電腦上的 zip。';
+    status('網頁上沒有可用的韌體。請選擇電腦上已下載的 zip，或解壓後的資料夾。');
+    controls();
+  }
+}
+loadHosted();
