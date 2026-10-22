@@ -147,6 +147,9 @@ void Pet::createEgg(int16_t fixedTarget, bool fixedShiny) {
   careMistakes = 0;
   mistakeCooldown = 0;
   sleeping = false;
+  sitterUntil = 0;
+  walkCarePaused = false;
+  sleepNeedMinutes = 0;
   frozen = false;
   learnQCount = 0;
   save();
@@ -163,6 +166,20 @@ void Pet::createEgg(int16_t fixedTarget, bool fixedShiny) {
 static uint8_t dropTo(uint8_t v, uint8_t d, uint8_t fl) {
   if (v <= fl) return v;
   return (v - fl > d) ? v - d : fl;
+}
+
+// 22:00 and the following morning until 09:00 share one night id, so waking
+// the pet does not schedule another bedtime until the next evening.
+static uint32_t moonSleepNightKey(uint32_t epoch) {
+  if (!epoch) return 0;
+  uint8_t hour = (uint8_t)((epoch / 3600UL) % 24UL);
+  uint32_t day = epoch / 86400UL;
+  bool night = (NIGHT_START < NIGHT_END)
+                 ? (hour >= NIGHT_START && hour < NIGHT_END)
+                 : (hour >= NIGHT_START || hour < NIGHT_END);
+  if (!night) return 0;
+  if (hour >= NIGHT_START) return day + 1UL;
+  return day ? day : 1UL;
 }
 
 void Pet::setClock(uint32_t nowEpoch) {
@@ -187,6 +204,7 @@ void Pet::syncClock(uint32_t nowEpoch) {
 void Pet::applyOfflineMinutes(uint32_t mins) {
   if (activeSwapBlocked || !mins || ceremony != CER_NONE || starterPick) return;
   if (mins > 14UL * 24 * 60) mins = 14UL * 24 * 60;  // tope: 2 semanas
+  uint32_t base = (lastSeenEpoch > mins * 60UL) ? lastSeenEpoch - mins * 60UL : 0;
 
   for (uint32_t i = 0; i < mins; i++) {
     ageMinutes++; // Active companions grow too; stored records never tick.
@@ -194,13 +212,12 @@ void Pet::applyOfflineMinutes(uint32_t mins) {
       if (ageMinutes >= 3) hatch();  // eclosiona en tu ausencia
       continue;
     }
-    if (sleeping) {  // descanso: baja lento y con suelo, igual que en vivo
-      energy = clamp100(energy + SLEEP_ENERGY_PER_MIN);
-      if (ageMinutes % 2 == 0) {
-        fullness = dropTo(fullness, 1, 30);
-        joy = dropTo(joy, 1, 35);
-      }
-      if (ageMinutes % 3 == 0) hygiene = dropTo(hygiene, 1, 45);
+    uint32_t minuteEpoch = base + (i + 1UL) * 60UL;
+    if (!walkCarePaused) applyAutomaticBedtime(minuteEpoch);
+    if (walkCarePaused) continue;
+    if (sitterUntil && minuteEpoch < sitterUntil) continue;
+    if (sleeping) {
+      applySleepingMinute(minuteEpoch);
       continue;
     }
     fullness = dropTo(fullness, 2, 15);
@@ -208,8 +225,9 @@ void Pet::applyOfflineMinutes(uint32_t mins) {
     hygiene = dropTo(hygiene, 1, 15);
     joy = dropTo(joy, 1, 15);
   }
+  if (sitterUntil && lastSeenEpoch >= sitterUntil) sitterUntil = 0;
   if (!isEgg()) {
-    if (!sleeping) {  // durmiendo no ensucia
+    if (!sleeping && !sitterActive()) {  // asleep or with the sitter: no dirt
       uint8_t p = poops + mins / 240;
       poops = p > 3 ? 3 : p;
     }
@@ -292,21 +310,24 @@ void Pet::tick() {
     return;
   }
 
-  applyAutoSleep();   // put down at 21:00 still goes to bed at 22:00
+  if (sitterUntil && lastSeenEpoch && lastSeenEpoch >= sitterUntil) {
+    sitterUntil = 0;
+    pendingSave = true;
+  }
+  applyAutoSleep();   // 22:00 on the main screen, once per night
 
+  // A walk or the babysitter keeps needs where they are. Age still advanced.
+  if (walkCarePaused || sitterActive()) {
+    checkMedals();
+    checkLearnGates();
+    if (++ticksSinceSave >= 5) pendingSave = true;
+    return;
+  }
 
-  // el sueño es descanso: la energia se recupera y las necesidades bajan MUCHO
-  // mas lento que despierto y con suelo (amanece pidiendo algo de mimo, no a
-  // cero, sin descuidos ni escapadas). despierto: comida -2/min, hig/joy -1/min.
-  // El peso aun se quema y el descanso cuenta para la DEF (ver defTick).
+  // Sleep restores energy. From 22:00 to 09:00 only fullness slips, and it
+  // stops at 50. A daytime nap keeps the slower floors used before.
   if (sleeping) {
-    energy = clamp100(energy + SLEEP_ENERGY_PER_MIN);
-    if (weight > 0 && ageMinutes % 3 == 0) weight--;
-    if (ageMinutes % 2 == 0) {                 // ~4x mas lento que despierto
-      fullness = dropTo(fullness, 1, 30);
-      joy = dropTo(joy, 1, 35);
-    }
-    if (ageMinutes % 3 == 0) hygiene = dropTo(hygiene, 1, 45);
+    applySleepingMinute(lastSeenEpoch);
     defTick(true);  // descansar tambien es bienestar: cuenta para la DEF
     checkMedals();  // aun puede cruzar un nivel por edad mientras duerme
     if (++ticksSinceSave >= 5) pendingSave = true;
@@ -399,6 +420,9 @@ void Pet::reviveFrom(const PartyMon &m) {
   strncpy(nick, m.nick, sizeof(nick) - 1);
   nick[sizeof(nick) - 1] = 0;
   sleepAuto = SLEEP_NONE;
+  sitterUntil = 0;
+  walkCarePaused = false;
+  sleepNeedMinutes = 0;
   goodTicks = 0;
   evoDeclinedLv = 0;
   farDeclinedAge = 0;
@@ -1618,30 +1642,60 @@ bool Pet::isNightHour() const {
 //
 // Only what this put to sleep is woken by it: a creature the player sent to bed
 // with the light button stays there until the player says otherwise.
-void Pet::applyAutoSleep() {
-  if (isEgg() || ceremony != CER_NONE) return;
-  bool night = isNightHour();
-  if (screenIsOff && night && !sleeping && sleepAuto != SLEEP_PLAYER) {
+void Pet::applyAutomaticBedtime(uint32_t epoch) {
+  uint32_t night = moonSleepNightKey(epoch);
+  if (!night || isEgg() || ceremony != CER_NONE || walkCarePaused || bedtimeBlocked)
+    return;
+  if (automaticSleepNight == night) return;
+  automaticSleepNight = night;
+  if (!sleeping) {
     sleeping = true;
+    sitterUntil = 0;
+    sleepNeedMinutes = 0;
     sleepAuto = SLEEP_AUTO;
     pendingSave = true;
   }
-  // NOTHING wakes it here, and that is the whole point. Waking at 06:00 would
-  // reopen the hole this exists to close: from the sleep floors, food is empty
-  // by 06:15 and every stat by 07:40, so anyone who sleeps past eight would
-  // find the creature ready to run away again. It sleeps until YOU are up,
-  // which is the screen coming back on.
-  if (!night && sleepAuto == SLEEP_PLAYER) sleepAuto = SLEEP_NONE;  // a new day
+}
+
+void Pet::applySleepingMinute(uint32_t minuteEpoch) {
+  bool night = moonSleepNightKey(minuteEpoch) != 0;
+  if (night) {
+    energy = clamp100((int)energy + 6);
+    if (weight > 0 && ageMinutes % 3 == 0) weight--;
+    if (++sleepNeedMinutes >= 5) {
+      sleepNeedMinutes = 0;
+      fullness = dropTo(fullness, 1, 50);
+    }
+    return;
+  }
+  energy = clamp100((int)energy + SLEEP_ENERGY_PER_MIN);
+  if (weight > 0 && ageMinutes % 3 == 0) weight--;
+  if (ageMinutes % 2 == 0) {
+    fullness = dropTo(fullness, 1, 30);
+    joy = dropTo(joy, 1, 35);
+  }
+  if (ageMinutes % 3 == 0) hygiene = dropTo(hygiene, 1, 45);
+}
+
+void Pet::applyAutoSleep() {
+  if (isEgg() || ceremony != CER_NONE) return;
+  if (!isNightHour()) {
+    // Morning, and the screen is already on: an automatic night's sleep ends.
+    // A pet the player put to bed stays there until the light button.
+    if (sleeping && sleepAuto == SLEEP_AUTO && !screenIsOff && !bedtimeBlocked) {
+      sleeping = false;
+      sleepAuto = SLEEP_NONE;
+      pendingSave = true;
+    } else if (sleepAuto == SLEEP_PLAYER) {
+      sleepAuto = SLEEP_NONE;
+    }
+    return;
+  }
+  applyAutomaticBedtime(lastSeenEpoch);
 }
 
 void Pet::setScreenOff(bool off) {
   screenIsOff = off;
-  // Coming back to the device is what wakes it -- only if the device is what
-  // put it to sleep. A creature sent to bed with the light stays there.
-  if (!off && sleeping && sleepAuto == SLEEP_AUTO) {
-    sleeping = false;
-    sleepAuto = SLEEP_NONE;
-  }
   applyAutoSleep();
   save();
 }
@@ -1650,11 +1704,155 @@ void Pet::toggleLight() {
   if (ceremony != CER_NONE) return;
   if (isEgg()) return;
   sleeping = !sleeping;
-  // The player's hand beats the clock until morning: waking it at 23:00 must
-  // not be undone a minute later by the auto-sleep, and neither must putting
-  // it to bed early.
+  if (sleeping) sitterUntil = 0;
+  // The player's hand beats the clock for the rest of this night.
   sleepAuto = SLEEP_PLAYER;
+  uint32_t night = moonSleepNightKey(lastSeenEpoch);
+  if (night) automaticSleepNight = night;
+  sleepNeedMinutes = 0;
   save();
+}
+
+bool Pet::sitterActive() const {
+  return !sleeping && lastSeenEpoch && sitterUntil && lastSeenEpoch < sitterUntil;
+}
+
+bool Pet::canStartSitter() const {
+  if (!lastSeenEpoch || isEgg() || sleeping || ceremony != CER_NONE || sitterActive())
+    return false;
+  if (walkCarePaused) return false;
+  if (fullness <= 15 || joy <= 15 || energy <= 15 || hygiene <= 15) return false;
+  return (lastSeenEpoch % 86400UL) < 19UL * 3600UL;
+}
+
+bool Pet::startSitter() {
+  if (!canStartSitter()) return false;
+  sitterUntil = lastSeenEpoch - (lastSeenEpoch % 86400UL) + 19UL * 3600UL;
+  save();
+  return true;
+}
+
+void Pet::stopSitter() {
+  if (!sitterUntil) return;
+  sitterUntil = 0;
+  save();
+}
+
+bool Pet::canStartWalk() const {
+  if (isEgg() || sleeping || ceremony != CER_NONE || walkCarePaused) return false;
+  if (fullness <= 15 || joy <= 15 || hygiene <= 15) return false;
+  return energy >= 24;
+}
+
+bool Pet::beginWalk() {
+  if (!canStartWalk()) return false;
+  energy = clamp100((int)energy - 8);
+  walkCarePaused = true;
+  save();
+  return true;
+}
+
+void Pet::cancelWalk() {
+  if (!walkCarePaused) return;
+  walkCarePaused = false;
+  energy = clamp100((int)energy + 8);
+  save();
+}
+
+void Pet::finishWalk(uint16_t steps) {
+  walkCarePaused = false;
+  if (!steps || isEgg() || ceremony != CER_NONE) {
+    save();
+    return;
+  }
+  uint8_t tier = steps >= 1000 ? 4 : steps >= 600 ? 3 : steps >= 300 ? 2 : steps >= 150 ? 1 : 0;
+  joy = clamp100((int)joy + 20);
+  heartUntil = millis() + HEART_MS;
+  addBond(tier > 3 ? 3 : tier);
+  registerCare();
+  save();
+}
+
+static uint8_t trainUp(uint8_t stat, uint8_t cap, uint8_t gain) {
+  if (!gain || stat >= cap) return stat;
+  uint16_t next = (uint16_t)stat + gain;
+  return next > cap ? cap : (uint8_t)next;
+}
+
+uint8_t Pet::applyMinigame(uint8_t which, uint16_t got) {
+  if (ceremony != CER_NONE || isEgg() || !got || which > PLAY_JUMP) return 0;
+  static const uint8_t kMax[5] = { 50, 100, 35, 20, 19 };
+  if (got > kMax[which]) got = kMax[which];
+  uint8_t perf = (uint8_t)((uint16_t)got * 100U / kMax[which]);
+  uint8_t bonus = perf >= 80 ? 3 : perf >= 50 ? 2 : perf >= 20 ? 1 : 0;
+  joy = clamp100((int)joy + 20);
+  if (perf >= 20) heartUntil = millis() + HEART_MS;
+  if (which == PLAY_RUN) {
+    trSpe = trainUp(trSpe, trMaxSpe(), bonus);
+    energy = dropTo(energy, 5, 5);
+    fullness = dropTo(fullness, 2, 5);
+    int burn = (int)weight - (int)perf * 5 / 100;
+    weight = burn > 0 ? (uint8_t)burn : 0;
+  } else if (which == PLAY_WAKE) {
+    trDef = trainUp(trDef, trMaxDef(), bonus);
+    energy = clamp100((int)energy + 4 + (int)perf * 14 / 100);
+  } else if (which == PLAY_CATCH) {
+    fullness = clamp100((int)fullness + 4 + (int)perf * 16 / 100);
+    int burn = (int)weight - (int)perf * 5 / 100;
+    weight = burn > 0 ? (uint8_t)burn : 0;
+  } else if (which == PLAY_DIG) {
+    trAtk = trainUp(trAtk, trMaxAtk(), bonus);
+    energy = dropTo(energy, 5, 8);
+    fullness = dropTo(fullness, 2, 5);
+  } else {
+    energy = clamp100((int)energy + 4 + (int)perf * 14 / 100);
+    fullness = dropTo(fullness, 2, 5);
+    int burn = (int)weight - (int)perf * 5 / 100;
+    weight = burn > 0 ? (uint8_t)burn : 0;
+  }
+  addBond(bonus ? bonus : 1);
+  registerCare();
+  save();
+  return bonus;
+}
+
+int16_t Pet::pickVisitSpecies() const {
+  int16_t pick = 0;
+  uint16_t seen = 0;
+  for (int i = 1; i <= DEX_COUNT; i++) {
+    if (!isRegistered(i) || i == speciesId) continue;
+    seen++;
+    if ((uint16_t)random(seen) == 0) pick = (int16_t)i;
+  }
+  return pick ? pick : (speciesId > 0 ? speciesId : 1);
+}
+
+uint8_t Pet::takeRandomEvent() {
+  if (!opened || !lastSeenEpoch || isEgg() || sleeping || ceremony != CER_NONE || sitterActive())
+    return 0;
+  if (eventNext && lastSeenEpoch < eventNext) return 0;
+  if (registeredCount() < 2) return 0;
+  if (!eventNext) {
+    eventNext = lastSeenEpoch + 15UL * 60UL;
+    save();
+    return 0;
+  }
+  eventNext = lastSeenEpoch + 15UL * 60UL;
+  uint8_t roll = (uint8_t)random(100);
+  uint8_t kind = 0;
+  if (roll < 7) {
+    kind = 1;
+    joy = clamp100((int)joy + 12);
+    heartUntil = millis() + HEART_MS;
+    addBond(1);
+    registerCare();
+    visitSpecies = pickVisitSpecies();
+  } else if (roll < 14) {
+    kind = 2;
+    visitSpecies = pickVisitSpecies();
+  }
+  save();
+  return kind;
 }
 
 void Pet::clean() {
@@ -1730,6 +1928,10 @@ void Pet::save() {
   prefs.putBool("stpk", starterPick);
   prefs.putUChar("evop", evoPen);
   prefs.putUChar("slpa", sleepAuto);
+  prefs.putUInt("sitter", sitterUntil);
+  prefs.putUInt("evNext", eventNext);
+  prefs.putUInt("slpn", automaticSleepNight);
+  prefs.putUChar("slpm", sleepNeedMinutes);
   prefs.putBool("rtpn", retirePending);
   prefs.putUChar("cer",ceremony);
   prefs.putBytes("dexsh", dexShinyReg, sizeof(dexShinyReg));
@@ -1803,6 +2005,10 @@ void Pet::load(bool progress) {
   evoPen = 0;
   if (prefs.getUChar("evop", 0)) prefs.putUChar("evop", 0);
   sleepAuto = prefs.getUChar("slpa", SLEEP_NONE);
+  sitterUntil = prefs.getUInt("sitter", 0);
+  eventNext = prefs.getUInt("evNext", 0);
+  automaticSleepNight = prefs.getUInt("slpn", 0);
+  sleepNeedMinutes = prefs.getUChar("slpm", 0);
   retirePending = prefs.getBool("rtpn", false);
   loadBlob(prefs, "dexsh", dexShinyReg, sizeof(dexShinyReg));
   ageMinutes = prefs.getUInt("age", 0);

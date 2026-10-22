@@ -9,6 +9,9 @@
   branch maintained by ShadowEnemyx.
 - Hong Kong Traditional Chinese edition, current firmware features, UI, power management,
   communication, minigames and Windows flasher: ccs21.
+- Moon sleep, Chansey babysitter, friend and wild visits, the five extra minigames,
+  step walk and the power-saving toggle are carried over from
+  [ccs21/TamaPoke_Piggy_Kor](https://github.com/ccs21/TamaPoke_Piggy_Kor).
 
 The original copyright and MIT notice are retained in `LICENSE`.
 
