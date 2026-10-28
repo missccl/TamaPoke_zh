@@ -2713,6 +2713,7 @@ void render() {
     drawHeader(name, gNight ? UI_INK_NIGHT : d.accent, statusMsg());
     drawStreakBadge();
     drawPet();
+    piggyDrawSitter();
     drawBath();
     drawPoops();
     // panel inferior: base limpia para barras y botones sobre el paisaje

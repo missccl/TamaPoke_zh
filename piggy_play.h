@@ -13,3 +13,5 @@ void piggyTick(uint32_t now, bool idleHome);
 void piggyRender();
 void piggyTap(int16_t x, int16_t y);
 void piggySwipe();
+// Chansey standing on the home screen while the babysitter is on.
+void piggyDrawSitter();
