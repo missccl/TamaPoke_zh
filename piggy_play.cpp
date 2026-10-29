@@ -7,7 +7,15 @@
 #include "zh_text.h"
 #include "species.h"
 #include "dex.h"
+#include "sdmon.h"
+#include "extra_art.h"
+#include <cstring>
 #include <math.h>
+
+// PMD drawing lives in the sketch. These screens only call it.
+extern PmdMon pmd;
+void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool sil, uint8_t maxS);
+void drawMap(const char *const *map, int n, int x, int y, int s, bool silhouette);
 
 extern Pet pet;
 extern ZhCanvas *gfx;
@@ -49,6 +57,24 @@ bool walkStarted = false;
 bool walkFailed = false;
 uint32_t walkSteps = 0;
 
+PmdMon actor;
+PmdMon rival;
+PmdMon guest;
+PmdMon sitterMon;
+bool guestTried = false;
+int16_t guestDex = 0;
+bool sitterTried = false;
+uint32_t wakeHit = 0;
+int16_t wakeX = 233;
+int16_t wakeY = 280;
+bool wakeShown = false;
+uint32_t bannerAt = 0;
+
+const int HOME_GROUND = 304;
+const int SNORLAX_X = 59;
+const int SNORLAX_Y = 100;
+const int SNORLAX_SCALE = 3;
+
 const int CX = 233;
 const int ROW_X = 73;
 const int ROW_W = 320;
@@ -86,8 +112,26 @@ void showResult(uint8_t got) {
   until = millis() + 2800;
 }
 
+void releaseCast() {
+  actor.unload();
+  rival.unload();
+}
+
+uint8_t actOf(PmdMon &m, uint8_t prefer, uint8_t fallback) {
+  if (m.has(prefer)) return prefer;
+  if (m.has(fallback)) return fallback;
+  return PMD_IDLE;
+}
+
+void drawActor(PmdMon &m, uint8_t act, int cx, int ground, uint32_t t, uint8_t scale) {
+  if (!m.loaded) return;
+  if (!m.has(act)) act = PMD_IDLE;
+  if (m.has(act)) drawPmdActM(m, act, cx, ground, t, true, false, scale);
+}
+
 void finishGame() {
   if (mode < RUN || mode > JUMP) return;
+  releaseCast();
   uint8_t got = pet.applyMinigame(kind, score);
   showResult(got);
 }
@@ -108,13 +152,19 @@ void beginRun() {
   runSpeed = 150;
   runLast = millis();
   startedAt = runLast;
+  releaseCast();
+  actor.load(25, false);
+  rival.load(109, false);
   mode = RUN;
 }
 
 void beginWake() {
   kind = PLAY_WAKE;
   score = 0;
+  wakeHit = 0;
+  wakeShown = false;
   startedAt = millis();
+  releaseCast();
   mode = WAKE;
 }
 
@@ -125,6 +175,8 @@ void beginCatch() {
   nextSpawn = millis();
   for (auto &f : fruits) f.live = false;
   startedAt = millis();
+  releaseCast();
+  actor.load(133, false);
   mode = CATCH;
 }
 
@@ -135,6 +187,7 @@ void beginDig() {
   digUp = false;
   digAt = millis();
   startedAt = digAt;
+  releaseCast();
   mode = DIG;
 }
 
@@ -145,6 +198,8 @@ void beginJump() {
   jumpScored = false;
   jumpAt = millis();
   startedAt = jumpAt;
+  releaseCast();
+  actor.load(129, false);
   mode = JUMP;
 }
 
@@ -243,39 +298,74 @@ void showWalkResult(uint32_t now) {
 
 void renderRun() {
   backdrop();
+  uint32_t now = millis();
+  gfx->fillRoundRect(300, 200, 70, 90, 12, UI_BAR_OK);
+  if (rival.loaded) drawActor(rival, actOf(rival, PMD_WALKL, PMD_IDLE), 335, 300, now, 2);
+  if (actor.loaded) drawActor(actor, actOf(actor, PMD_WALKR, PMD_IDLE), (int)runX, 300, now, 3);
+  else {
+    gfx->fillCircle((int)runX, 260, 22, 0xFEE0);
+    gfx->fillCircle((int)runX - 6, 253, 3, UI_INK);
+    gfx->fillCircle((int)runX + 8, 253, 3, UI_INK);
+  }
   centerText(T(S_GAME_RUN), 48, 2, UI_INK);
   drawScore();
-  gfx->fillRoundRect(300, 200, 70, 70, 12, UI_BAR_OK);
-  gfx->fillCircle((int)runX, 235, 22, 0xFEE0);
-  gfx->fillCircle((int)runX - 6, 228, 3, UI_INK);
-  gfx->fillCircle((int)runX + 8, 228, 3, UI_INK);
   gfx->flush();
 }
 
 void renderWake() {
   backdrop();
-  centerText(T(S_GAME_WAKE), 52, 2, UI_INK);
+  uint32_t now = millis();
+  if (wakeShown) {
+    drawExtraNamed(gfx, "S04", SNORLAX_X, SNORLAX_Y, SNORLAX_SCALE);
+  } else {
+    int shake = 0;
+    uint32_t age = wakeHit ? now - wakeHit : 1000;
+    if (wakeHit && age < 150) {
+      bool big = (score % 10) == 0;
+      shake = ((age / 24) & 1) ? (big ? 8 : 4) : (big ? -8 : -4);
+    }
+    drawExtraNamed(gfx, "S01", SNORLAX_X, SNORLAX_Y, SNORLAX_SCALE);
+    drawExtraNamed(gfx, "S02", SNORLAX_X + shake, SNORLAX_Y, SNORLAX_SCALE);
+    drawExtraNamed(gfx, "S03", SNORLAX_X, SNORLAX_Y, SNORLAX_SCALE);
+    uint32_t rings = (score % 10) == 0 ? 360 : 260;
+    if (wakeHit && age < rings) {
+      int radius = 24 + (int)(age / 5);
+      uint16_t col = (score % 10) == 0 ? UI_BAR_WARN : UI_BAR_OK;
+      for (uint8_t i = 0; i < 5; i++) gfx->drawCircle(wakeX, wakeY, radius + i, col);
+    }
+  }
+  centerText(T(S_GAME_WAKE), 36, 2, UI_INK);
   drawScore();
-  uint32_t elapsed = millis() - startedAt;
+  uint32_t elapsed = now - startedAt;
   uint32_t left = elapsed >= 30000UL ? 0 : 30000UL - elapsed;
   char buf[16];
   snprintf(buf, sizeof(buf), "%lu", (unsigned long)(left / 1000UL));
-  centerText(buf, 150, 2, UI_INK);
-  gfx->fillCircle(CX, 280, 78, 0x5B7B);
-  gfx->fillCircle(CX - 24, 268, 6, UI_INK);
-  gfx->fillCircle(CX + 24, 268, 6, UI_INK);
+  centerText(buf, 64, 2, UI_INK);
   gfx->flush();
 }
 
 void renderCatch() {
   backdrop();
+  uint32_t now = millis();
+  if (actor.loaded) drawActor(actor, PMD_IDLE, CX, 400, now, 3);
   centerText(T(S_GAME_CATCH), 48, 2, UI_INK);
   drawScore();
   for (auto &f : fruits) {
     if (!f.live) continue;
-    gfx->fillCircle(f.x, (int)f.y, 16, 0xF800);
+    const char *const *icon = ((f.x / 17) % 3) == 0 ? SPR_ICON_FOOD
+      : ((f.x / 17) % 3) == 1 ? SPR_ICON_BERRY_B : SPR_ICON_BERRY_G;
+    drawMap(icon, 16, f.x - 24, (int)f.y - 24, 3, false);
   }
   gfx->flush();
+}
+
+const char *digFrame(uint32_t age) {
+  constexpr uint32_t STEP = 70;
+  uint32_t remaining = age < 720 ? 720 - age : 0;
+  if (age < STEP || remaining <= STEP) return "D01";
+  if (age < STEP * 2 || remaining <= STEP * 2) return "D02";
+  if (age < STEP * 3 || remaining <= STEP * 3) return "D03";
+  return "D04";
 }
 
 void renderDig() {
@@ -283,26 +373,31 @@ void renderDig() {
   centerText(T(S_GAME_DIG), 48, 2, UI_INK);
   drawScore();
   const int xs[3] = { 120, 233, 346 };
-  for (int i = 0; i < 3; i++) {
-    gfx->fillCircle(xs[i], 300, 28, 0xB4A0);
-    gfx->fillCircle(xs[i], 308, 22, 0x49A0);
-    if (digUp && digHole == i)
-      gfx->fillCircle(xs[i], 268, 20, 0xC340);
+  const int cy = 300;
+  for (int i = 0; i < 3; i++)
+    drawExtraNamed(gfx, "D01", xs[i] - 33, cy - 20, 3);
+  if (digUp) {
+    const char *frame = digFrame(millis() - digAt);
+    if (strcmp(frame, "D01") != 0)
+      drawExtraNamed(gfx, frame, xs[digHole] - 33, cy - 20, 3);
   }
   gfx->flush();
 }
 
 void renderJump() {
   backdrop();
+  uint32_t now = millis();
   centerText(T(S_GAME_JUMP), 48, 2, UI_INK);
   drawScore();
-  float t = jumpsDone >= 19 ? 0 : (millis() - jumpAt) / 1200.0f;
+  float t = jumpsDone >= 19 ? 0 : (now - jumpAt) / 1200.0f;
   if (t < 0) t = 0;
   if (t > 1) t = 1;
   float arc = sinf(t * 3.14159f);
-  int y = 340 - (int)(arc * 150);
+  int ground = 360 - (int)(arc * 150);
   gfx->drawFastHLine(80, 360, 306, UI_INK);
-  gfx->fillCircle(CX, y, 18, 0xFD20);
+  if (actor.loaded)
+    drawActor(actor, arc > 0.15f ? actOf(actor, PMD_HOP, PMD_IDLE) : PMD_IDLE, CX, ground, now, 3);
+  else gfx->fillCircle(CX, ground - 18, 18, 0xFD20);
   gfx->flush();
 }
 
@@ -316,6 +411,7 @@ void renderWalk() {
     drawRow(230, T(S_WALK_GO), pet.canStartWalk());
     if (notice && millis() < noticeUntil) centerText(notice, 300, 1, UI_BAR_BAD);
   } else {
+    if (pmd.loaded) drawActor(pmd, actOf(pmd, PMD_WALKR, PMD_IDLE), 360, 300, millis(), 2);
     char buf[32];
     snprintf(buf, sizeof(buf), T(S_STEPS_FMT), (unsigned)walkSteps);
     centerText(buf, 160, 3, UI_INK);
@@ -345,6 +441,56 @@ void renderResult() {
   gfx->flush();
 }
 
+void dropGuest() {
+  guest.unload();
+  guestTried = false;
+  guestDex = 0;
+}
+
+void ensureGuest() {
+  int16_t dex = pet.lastVisitSpecies();
+  if (dex < 1 || dex > DEX_COUNT) return;
+  if (guest.loaded && guest.dex == dex) return;
+  if (guestTried && guestDex == dex) return;
+  guestTried = true;
+  guestDex = dex;
+  guest.load(dex, false);
+}
+
+void renderFriendScene(uint32_t elapsed) {
+  ensureGuest();
+  const int ground = 340;
+  if (elapsed < 1500) {
+    drawActor(pmd, actOf(pmd, PMD_NOD, PMD_POSE), 150, ground, elapsed, 3);
+    drawActor(guest, actOf(guest, PMD_NOD, PMD_POSE), 316, ground, elapsed, 3);
+  } else if (elapsed < 3500) {
+    uint32_t t = elapsed - 1500;
+    int p = (int)(t > 2000 ? 1000 : t * 1000 / 2000);
+    drawActor(pmd, actOf(pmd, PMD_WALKR, PMD_IDLE), 150 + 40 * p / 1000, ground, t, 3);
+    drawActor(guest, actOf(guest, PMD_WALKL, PMD_IDLE), 316 - 40 * p / 1000, ground, t, 3);
+  } else if (elapsed < 5500) {
+    uint32_t t = elapsed - 3500;
+    drawActor(pmd, actOf(pmd, PMD_POSE, PMD_NOD), 188, ground, t, 3);
+    drawActor(guest, actOf(guest, PMD_NOD, PMD_IDLE), 278, ground, t, 3);
+  } else {
+    drawActor(pmd, actOf(pmd, PMD_POSE, PMD_IDLE), 170, ground, elapsed, 3);
+    drawActor(guest, actOf(guest, PMD_NOD, PMD_IDLE), 296, ground, elapsed, 3);
+    int pulse = (int)((elapsed / 180) % 8);
+    drawMap(SPR_HEART, 32, 108, 126 - pulse, 2, false);
+    drawMap(SPR_HEART, 32, 294, 126 - (7 - pulse), 2, false);
+  }
+}
+
+void renderWildScene(uint32_t elapsed) {
+  ensureGuest();
+  if (elapsed < 1600) {
+    int x = 460 - (int)(elapsed * 140 / 1600);
+    drawActor(guest, actOf(guest, PMD_WALKL, PMD_IDLE), x, 320, elapsed, 4);
+  } else {
+    drawActor(guest, actOf(guest, PMD_POSE, PMD_IDLE), 320, 320, elapsed - 1600, 4);
+  }
+}
+
 void renderBanner() {
   backdrop();
   int16_t dex = pet.lastVisitSpecies();
@@ -352,12 +498,31 @@ void renderBanner() {
   char buf[64];
   if (bannerKind == 1) snprintf(buf, sizeof(buf), T(S_FRIEND_VISIT), name);
   else snprintf(buf, sizeof(buf), T(S_WILD_MET_FMT), name);
-  centerText(buf, 210, uiTextWidth(buf, 2) > 380 ? 1 : 2, UI_INK);
+  uint32_t elapsed = millis() - bannerAt;
+  if (bannerKind == 1) renderFriendScene(elapsed);
+  else renderWildScene(elapsed);
+  centerText(buf, 48, uiTextWidth(buf, 2) > 380 ? 1 : 2, UI_INK);
   gfx->flush();
+}
+
+void drawSitter() {
+  if (pet.isEgg() || !pet.sitterActive()) {
+    if (sitterMon.loaded) sitterMon.unload();
+    sitterTried = false;
+    return;
+  }
+  if (!sitterMon.loaded && !sitterTried) {
+    sitterTried = true;
+    sitterMon.load(113, false);
+  }
+  int bob = ((millis() / 900UL) & 1U) ? 0 : 2;
+  drawActor(sitterMon, PMD_IDLE, 350, HOME_GROUND - bob, millis(), 2);
 }
 }
 
 using namespace play;
+
+void piggyDrawSitter() { drawSitter(); }
 
 bool piggyBusy() { return mode != OFF; }
 bool piggyFast() { return mode >= RUN && mode <= WALK; }
@@ -376,19 +541,29 @@ void piggyOpenPlay() {
 void piggyTick(uint32_t now, bool idleHome) {
   if (mode == RUN) tickRun(now);
   else if (mode == WAKE) {
-    if (now - startedAt >= 30000UL || score >= 100) finishGame();
+    if (wakeShown) {
+      if (now - wakeHit >= 1200) finishGame();
+    } else if (now - startedAt >= 30000UL) finishGame();
+    else if (score >= 100) {
+      wakeShown = true;
+      wakeHit = now;
+    }
   } else if (mode == CATCH) tickCatch(now);
   else if (mode == DIG) tickDig(now);
   else if (mode == JUMP) tickJump(now);
   else if (mode == WALK) tickWalk(now);
-  else if ((mode == RESULT || mode == BANNER) && (int32_t)(now - until) >= 0) mode = OFF;
+  else if ((mode == RESULT || mode == BANNER) && (int32_t)(now - until) >= 0) {
+    dropGuest();
+    mode = OFF;
+  }
 
   if (mode == OFF && idleHome) {
     uint8_t ev = pet.takeRandomEvent();
     if (ev) {
       bannerKind = ev;
       mode = BANNER;
-      until = now + 3200;
+      bannerAt = now;
+      until = now + (ev == 1 ? 8000UL : 4000UL);
       gain = ev == 1 ? 1 : 0;
       score = 1;
     }
@@ -430,7 +605,7 @@ void piggyRender() {
 }
 
 void piggyTap(int16_t x, int16_t y) {
-  if (mode == RESULT || mode == BANNER) { mode = OFF; return; }
+  if (mode == RESULT || mode == BANNER) { dropGuest(); mode = OFF; return; }
   if (mode == SLEEP_MENU) {
     if (hitRow(x, y, sleepRowY(0))) {
       pet.toggleLight();
@@ -481,9 +656,14 @@ void piggyTap(int16_t x, int16_t y) {
     return;
   }
   if (mode == WAKE) {
-    int dx = x - CX, dy = y - 280;
-    if (dx * dx + dy * dy <= 78 * 78 && score < 100) {
+    if (wakeShown) return;
+    bool onBody = x >= SNORLAX_X && x < SNORLAX_X + 116 * SNORLAX_SCALE &&
+                  y >= SNORLAX_Y && y < SNORLAX_Y + 116 * SNORLAX_SCALE;
+    if (onBody && score < 100) {
       score++;
+      wakeHit = millis();
+      wakeX = x;
+      wakeY = y;
       sfxPlay(SFX_TAP);
     }
     return;
@@ -503,8 +683,8 @@ void piggyTap(int16_t x, int16_t y) {
   if (mode == DIG) {
     if (!digUp) return;
     const int xs[3] = { 120, 233, 346 };
-    int dx = x - xs[digHole], dy = y - 280;
-    if (dx * dx + dy * dy <= 40 * 40) {
+    int dx = x - xs[digHole], dy = y - 300;
+    if (abs(dx) <= 49 && abs(dy) <= 32) {
       if (score < 20) score++;
       digUp = false;
       digAt = millis();
@@ -556,6 +736,8 @@ void piggySwipe() {
   }
   if (mode >= RUN && mode <= JUMP) { finishGame(); return; }
   if (mode == WALK) mode = OFF;
-  else if (mode == SLEEP_MENU || mode == PLAY_MENU || mode == RESULT || mode == BANNER)
+  else if (mode == SLEEP_MENU || mode == PLAY_MENU || mode == RESULT || mode == BANNER) {
+    dropGuest();
     mode = OFF;
+  }
 }
